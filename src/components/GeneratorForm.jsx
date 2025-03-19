@@ -1,9 +1,10 @@
+// components/GeneratorForm.jsx
 import { useState } from 'react';
 import axios from 'axios';
 
 const token = import.meta.env.VITE_HF_TOKEN;
 
-const GeneratorForm = ({ setGeneratedImage, setLoading, loading }) => {
+const GeneratorForm = ({ setGeneratedImage, setGeneratedImageUrl, setLoading, loading }) => {
   const [prompt, setPrompt] = useState('');
   const [style, setStyle] = useState('realistic');
   const [resolution, setResolution] = useState('1024x1024'); // Default to 1024x1024 for print quality
@@ -116,7 +117,8 @@ const GeneratorForm = ({ setGeneratedImage, setLoading, loading }) => {
       );
 
       const imageUrl = URL.createObjectURL(response.data);
-      setGeneratedImage(imageUrl);
+      setGeneratedImageUrl(imageUrl);
+      setGeneratedImage(imageUrl); // For parent component
     } catch (error) {
       console.error('Error generating image:', error);
       if (error.response) {
@@ -145,90 +147,90 @@ const GeneratorForm = ({ setGeneratedImage, setLoading, loading }) => {
 
   return (
     <form onSubmit={handleSubmit} className="w-full max-w-md bg-white p-6 rounded-lg shadow-md">
-      {errorMessage && (
-        <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">
-          {errorMessage}
+        {errorMessage && (
+          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">
+            {errorMessage}
+          </div>
+        )}
+        {model === 'black-forest-labs/FLUX.1-dev' && (
+          <div className="mb-4 p-3 bg-yellow-100 text-yellow-700 rounded-lg">
+            Note: FLUX.1-dev does not support negative prompts, so anatomical corrections are limited. Please include detailed anatomical guidance in your prompt (e.g., "with realistic proportions, five fingers per hand").
+          </div>
+        )}
+        <div className="mb-4 p-3 bg-blue-100 text-blue-700 rounded-lg">
+          Post-Processing Tip: For print-ready images, consider removing the background and upscaling to 2048x2048 if needed for larger prints.
         </div>
-      )}
-      {model === 'black-forest-labs/FLUX.1-dev' && (
-        <div className="mb-4 p-3 bg-yellow-100 text-yellow-700 rounded-lg">
-          Note: FLUX.1-dev does not support negative prompts, so anatomical corrections are limited. Please include detailed anatomical guidance in your prompt (e.g., "with realistic proportions, five fingers per hand").
+        <div className="mb-4">
+          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="prompt">
+            Image Description
+          </label>
+          <textarea
+            id="prompt"
+            value={prompt}
+            onChange={onPromptChange}
+            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black bg-white"
+            placeholder="E.g., a bear wearing a suit, with realistic proportions, correct anatomy, five fingers per hand, vibrant colors"
+            rows="10"
+            required
+          />
         </div>
-      )}
-      <div className="mb-4 p-3 bg-blue-100 text-blue-700 rounded-lg">
-        Post-Processing Tip: For print-ready images, consider removing the background using a tool like Printify or iFoto, and upscale to 2048x2048 if needed for larger prints.
-      </div>
-      <div className="mb-4">
-        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="prompt">
-          Image Description
-        </label>
-        <textarea
-          id="prompt"
-          value={prompt}
-          onChange={onPromptChange}
-          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black bg-white"
-          placeholder="E.g., a bear wearing a suit, with realistic proportions, correct anatomy, five fingers per hand, vibrant colors"
-          rows="10"
-          required
-        />
-      </div>
 
-      <div className="mb-4">
-        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="model">
-          Model (Free on Hugging Face API)
-        </label>
-        <select
-          id="model"
-          value={model}
-          onChange={(e) => setModel(e.target.value)}
-          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black bg-white"
+        <div className="mb-4">
+          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="model">
+            Model (Free on Hugging Face API)
+          </label>
+          <select
+            id="model"
+            value={model}
+            onChange={(e) => setModel(e.target.value)}
+            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black bg-white"
+          >
+            <option value="black-forest-labs/FLUX.1-dev">FLUX.1-dev (Black Forest Labs)</option>
+            <option value="runwayml/stable-diffusion-v1-5">Stable Diffusion v1.5 (RunwayML)</option>
+            <option value="stabilityai/stable-diffusion-xl-base-1.0">Stable Diffusion XL 1.0 (Stability AI)</option>
+          </select>
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="style">
+            Style
+          </label>
+          <select
+            id="style"
+            value={style}
+            onChange={(e) => setStyle(e.target.value)}
+            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black bg-white"
+          >
+            <option value="realistic">Realistic</option>
+            <option value="cartoon">Cartoon</option>
+            <option value="abstract">Abstract</option>
+          </select>
+        </div>
+
+        <div className="mb-6">
+          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="resolution">
+            Resolution
+          </label>
+          <select
+            id="resolution"
+            value={resolution}
+            onChange={(e) => setResolution(e.target.value)}
+            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black bg-white"
+          >
+            {getResolutionOptions().map((res) => (
+              <option key={res} value={res}>{res}</option>
+            ))}
+          </select>
+        </div>
+
+        <button
+          type="submit"
+          className="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-300"
+          disabled={loading}
         >
-          <option value="black-forest-labs/FLUX.1-dev">FLUX.1-dev (Black Forest Labs)</option>
-          <option value="runwayml/stable-diffusion-v1-5">Stable Diffusion v1.5 (RunwayML)</option>
-          <option value="stabilityai/stable-diffusion-xl-base-1.0">Stable Diffusion XL 1.0 (Stability AI)</option>
-        </select>
-      </div>
-
-      <div className="mb-4">
-        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="style">
-          Style
-        </label>
-        <select
-          id="style"
-          value={style}
-          onChange={(e) => setStyle(e.target.value)}
-          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black bg-white"
-        >
-          <option value="realistic">Realistic</option>
-          <option value="cartoon">Cartoon</option>
-          <option value="abstract">Abstract</option>
-        </select>
-      </div>
-
-      <div className="mb-6">
-        <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="resolution">
-          Resolution
-        </label>
-        <select
-          id="resolution"
-          value={resolution}
-          onChange={(e) => setResolution(e.target.value)}
-          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black bg-white"
-        >
-          {getResolutionOptions().map((res) => (
-            <option key={res} value={res}>{res}</option>
-          ))}
-        </select>
-      </div>
-
-      <button
-        type="submit"
-        className="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition duration-300"
-        disabled={loading}
-      >
-        {loading ? 'Generating...' : 'Generate Image'}
-      </button>
-    </form>
+          {loading ? 'Generating...' : 'Generate Image'}
+        </button>
+      </form>
   );
 };
 
