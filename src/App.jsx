@@ -1,7 +1,9 @@
-import { useState } from 'react';
-import GeneratorForm from './components/GeneratorForm';
-import ImageDisplay from './components/ImageDisplay';
-import ProductPreview from './components/ProductPreview';
+import { useState } from "react";
+import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import GeneratorForm from "./components/GeneratorForm";
+import ImageDisplay from "./components/ImageDisplay";
+import ProductPreview from "./components/ProductPreview";
+import TShirtCustomizer from "./pages/TShirtCustomizer";
 
 function App() {
   const [generatedImage, setGeneratedImage] = useState(null);
@@ -9,14 +11,34 @@ function App() {
   const [loading, setLoading] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4">
-      <h1 className="text-3xl font-bold mb-8 text-gray-800">Text to Image Generator</h1>
-      <GeneratorForm setGeneratedImage={setGeneratedImage} setGeneratedImageUrl={setGeneratedImageUrl} setLoading={setLoading} loading={loading} />
-      <ImageDisplay image={generatedImage} loading={loading} />
-      {generatedImageUrl && (
-        <ProductPreview imageUrl={generatedImageUrl} />
-      )}
-    </div>
+    <Router>
+      <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4">
+        <nav className="mb-4">
+          <Link to="/" className="text-blue-500 mx-2">Home</Link>
+          <Link to="/customizer" className="text-blue-500 mx-2">T-Shirt Customizer</Link>
+        </nav>
+
+        <Routes>
+          <Route
+            path="/"
+            element={
+              <>
+                <h1 className="text-3xl font-bold mb-8 text-gray-800">Text to Image Generator</h1>
+                <GeneratorForm
+                  setGeneratedImage={setGeneratedImage}
+                  setGeneratedImageUrl={setGeneratedImageUrl}
+                  setLoading={setLoading}
+                  loading={loading}
+                />
+                <ImageDisplay image={generatedImage} loading={loading} />
+                {generatedImageUrl && <ProductPreview imageUrl={generatedImageUrl} />}
+              </>
+            }
+          />
+          <Route path="/customizer" element={<TShirtCustomizer imageUrl={generatedImageUrl} />} />
+        </Routes>
+      </div>
+    </Router>
   );
 }
 
