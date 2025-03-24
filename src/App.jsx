@@ -4,6 +4,7 @@ import GeneratorForm from "./components/GeneratorForm";
 import ImageDisplay from "./components/ImageDisplay";
 import ProductPreview from "./components/ProductPreview";
 import TShirtCustomizer from "./pages/TShirtCustomizer";
+import DesignMakerApp from "./components/design-maker/DesignMakerApp";
 
 function App() {
   const [generatedImage, setGeneratedImage] = useState(null);
@@ -12,10 +13,17 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4">
+      <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center">
         <nav className="mb-4">
-          <Link to="/" className="text-blue-500 mx-2">Home</Link>
-          <Link to="/customizer" className="text-blue-500 mx-2">T-Shirt Customizer</Link>
+          <Link to="/" className="text-blue-500 mx-2">
+            Home
+          </Link>
+          <Link to="/customizer" className="text-blue-500 mx-2">
+            T-Shirt Customizer
+          </Link>
+          <Link to="/design-maker" className="text-blue-500 mx-2">
+            Design Maker
+          </Link>
         </nav>
 
         <Routes>
@@ -23,7 +31,9 @@ function App() {
             path="/"
             element={
               <>
-                <h1 className="text-3xl font-bold mb-8 text-gray-800">Text to Image Generator</h1>
+                <h1 className="text-3xl font-bold mb-8 text-gray-800">
+                  Text to Image Generator
+                </h1>
                 <GeneratorForm
                   setGeneratedImage={setGeneratedImage}
                   setGeneratedImageUrl={setGeneratedImageUrl}
@@ -31,11 +41,17 @@ function App() {
                   loading={loading}
                 />
                 <ImageDisplay image={generatedImage} loading={loading} />
-                {generatedImageUrl && <ProductPreview imageUrl={generatedImageUrl} />}
+                {generatedImageUrl && (
+                  <ProductPreview imageUrl={generatedImageUrl} />
+                )}
               </>
             }
           />
-          <Route path="/customizer" element={<TShirtCustomizer imageUrl={generatedImageUrl} />} />
+          <Route
+            path="/customizer"
+            element={<TShirtCustomizer imageUrl={generatedImageUrl} />}
+          />
+          <Route path="/design-maker" element={<DesignMakerApp />} />
         </Routes>
       </div>
     </Router>
