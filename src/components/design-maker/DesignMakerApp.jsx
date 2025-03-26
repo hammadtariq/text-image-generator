@@ -9,14 +9,13 @@ import FileLibraryModal from "../ui/FileLibraryModal";
 
 import { Layout } from "antd";
 
-const { Content } = Layout;
-
 function DesignMakerApp() {
   const [activeSection, setActiveSection] = useState("Product");
   const canvasRef = useRef(null);
   const [fabricCanvas, setFabricCanvas] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isFileLibraryVisible, setIsFileLibraryVisible] = useState(false);
+  const [selectedColor, setSelectedColor] = useState("black");
 
   const handleOpenModal = () => setIsModalVisible(true);
   const handleCloseModal = () => setIsModalVisible(false);
@@ -30,6 +29,7 @@ function DesignMakerApp() {
       <div className="flex flex-row flex-1 relative">
         <Sidebar
           activeSection={activeSection}
+          canvas={fabricCanvas}
           setActiveSection={setActiveSection}
           openUploadModal={handleOpenModal}
         />
@@ -41,13 +41,21 @@ function DesignMakerApp() {
             canvas={fabricCanvas}
             isModalVisible={isModalVisible}
             handleCloseModal={handleCloseModal}
+            selectedColor={selectedColor}
+            setSelectedColor={setSelectedColor}
           />
         </div>
 
         {/* Design Canvas Area */}
         <div className="flex-1 flex justify-center items-center bg-gray-200">
           <div className="border bg-white p-4 w-[80%] h-[90%] flex items-center justify-center shadow-md">
-            <DesignEditor ref={canvasRef} setCanvas={setFabricCanvas} />
+            {
+              <DesignEditor
+                ref={canvasRef}
+                setCanvas={setFabricCanvas}
+                selectedColor={selectedColor}
+              />
+            }
           </div>
         </div>
       </div>

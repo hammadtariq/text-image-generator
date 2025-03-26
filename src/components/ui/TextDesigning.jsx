@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import * as fabric from "fabric";
+import { Textbox, Control, util } from "fabric";
 import { Card } from "antd";
 import WebFont from "webfontloader";
 
@@ -9,6 +9,8 @@ function TextDesigning({ canvas }) {
   const [textPresets, setTextPresets] = useState([]);
 
   useEffect(() => {
+    if (!canvas) return;
+
     const fonts = [
       "Pacifico",
       "Lobster",
@@ -27,7 +29,7 @@ function TextDesigning({ canvas }) {
     WebFont.load({
       google: { families: fonts },
       active: () => {
-        canvas?.renderAll();
+        canvas.renderAll();
         generateTextPreviews(fonts);
       },
     });
@@ -38,6 +40,15 @@ function TextDesigning({ canvas }) {
         img: generateTextImage(font),
       }));
       setTextPresets(presets);
+    };
+  }, [canvas]);
+
+  useEffect(() => {
+    return () => {
+      if (canvas) {
+        canvas.discardActiveObject();
+        canvas.requestRenderAll();
+      }
     };
   }, [canvas]);
 
@@ -61,9 +72,7 @@ function TextDesigning({ canvas }) {
   deleteImg.src = deleteIcon;
 
   const addTextToCanvas = (presetText, style) => {
-    if (!canvas) return;
-
-    const textObj = new fabric.Textbox(presetText, {
+    const textObj = new Textbox(presetText, {
       // Changed to Textbox for better editing
       left: 50,
       top: 50,
@@ -80,7 +89,7 @@ function TextDesigning({ canvas }) {
     });
 
     // Add delete control
-    textObj.controls.deleteControl = new fabric.Control({
+    textObj.controls.deleteControl = new Control({
       x: 0.5,
       y: -0.5,
       offsetY: 16,
@@ -96,7 +105,7 @@ function TextDesigning({ canvas }) {
   };
 
   // Enable text editing on double click
-  canvas?.on("mouse:dblclick", (event) => {
+  canvas.on("mouse:dblclick", (event) => {
     const target = event.target;
     if (target && target.type === "textbox") {
       target.enterEditing();
@@ -107,6 +116,7 @@ function TextDesigning({ canvas }) {
   function deleteObject(_eventData, transform) {
     const canvas = transform.target.canvas;
     canvas.remove(transform.target);
+    canvas.discardActiveObject();
     canvas.requestRenderAll();
   }
 
@@ -114,7 +124,7 @@ function TextDesigning({ canvas }) {
     const size = this.cornerSize;
     ctx.save();
     ctx.translate(left, top);
-    ctx.rotate(fabric.util.degreesToRadians(fabricObject.angle));
+    ctx.rotate(util.degreesToRadians(fabricObject.angle));
     ctx.drawImage(deleteImg, -size / 2, -size / 2, size, size);
     ctx.restore();
   }
@@ -122,23 +132,34 @@ function TextDesigning({ canvas }) {
   return (
     <div className="flex flex-col">
       <h3 className="font-semibold">Add Text</h3>
-      <textarea
-        className="border p-2 w-full h-20"
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        placeholder="Enter custom text..."
-      />
-      <button
-        className="border p-2 mt-2 bg-gray-200"
-        onClick={() =>
-          addTextToCanvas(text, {
-            color: "black",
-            fontFamily: "Playfair Display",
-          })
-        }
+      <form
+        onSubmit={(e) => {
+          e.preventDefault(); // Prevent page reload
+          if (text.trim()) {
+            addTextToCanvas(text, {
+              color: "black",
+              fontFamily: "Playfair Display",
+            });
+            setText(""); // Clear text after adding
+          }
+        }}
       >
-        Add Custom Text
-      </button>
+        <textarea
+          className="border p-2 w-full h-20"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Enter custom text..."
+        />
+        <button
+          type="submit"
+          className={`border p-2 mt-2 w-full ${
+            text.trim() ? "bg-gray-200" : "bg-gray-300 cursor-not-allowed"
+          }`}
+          disabled={!text.trim()}
+        >
+          Add Custom Text
+        </button>
+      </form>
 
       <div className="flex flex-col space-y-2 mt-4">
         <div className="flex justify-between">

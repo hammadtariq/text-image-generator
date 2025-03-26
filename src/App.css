@@ -1,0 +1,11 @@
+.custom-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-image: url("https://upload.wikimedia.org/wikipedia/commons/thumb/2/24/Blue_Tshirt.jpg/300px-Blue_Tshirt.jpg");
+  background-color: black;
+  height: 1120px;
+  width: 800px;
+  position: relative;
+}
