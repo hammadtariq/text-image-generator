@@ -72,7 +72,7 @@ const DesignEditor = forwardRef(({ setCanvas, productId, template }, ref) => {
         const imgScaleX = scaledWidth / imgElement.width;
         const imgScaleY = scaledHeight / imgElement.height;
 
-        const img = new fabric.Image(imgElement, {
+        const img = new fabric.FabricImage(imgElement, {
           selectable: false,
           evented: false,
           left: 0,
