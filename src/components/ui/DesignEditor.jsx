@@ -34,9 +34,7 @@ const DesignEditor = forwardRef(({ setCanvas, productId, template }, ref) => {
       "inside",
       "outside",
     ];
-    const positions = words.filter((word) =>
-      positionIndicators.includes(word)
-    );
+    const positions = words.filter((word) => positionIndicators.includes(word));
     const remainingWords = words.filter(
       (word) => !positionIndicators.includes(word)
     );
@@ -84,7 +82,11 @@ const DesignEditor = forwardRef(({ setCanvas, productId, template }, ref) => {
         });
 
         fabricCanvas.set("backgroundColor", backgroundColor);
-        fabricCanvas.set("backgroundImage", img, fabricCanvas.renderAll.bind(fabricCanvas));
+        fabricCanvas.set(
+          "backgroundImage",
+          img,
+          fabricCanvas.renderAll.bind(fabricCanvas)
+        );
       };
     },
     []
@@ -146,7 +148,8 @@ const DesignEditor = forwardRef(({ setCanvas, productId, template }, ref) => {
   const updateBoundingArea = useCallback((template) => {
     if (!template) return;
 
-    const { printAreaWidth, printAreaHeight, printAreaTop, printAreaLeft } = template;
+    const { printAreaWidth, printAreaHeight, printAreaTop, printAreaLeft } =
+      template;
 
     // Note: These coordinates are in the original template pixel space.
     const newBoundingArea = {
@@ -203,7 +206,14 @@ const DesignEditor = forwardRef(({ setCanvas, productId, template }, ref) => {
     return () => {
       fabricCanvas.dispose();
     };
-  }, [ref, setCanvas, selectedVariant, variantImages, loadImage, updateBoundingArea]);
+  }, [
+    ref,
+    setCanvas,
+    selectedVariant,
+    variantImages,
+    loadImage,
+    updateBoundingArea,
+  ]);
 
   // Draw (or update) the bounding box using the displayScale factor.
   useEffect(() => {
@@ -219,7 +229,8 @@ const DesignEditor = forwardRef(({ setCanvas, productId, template }, ref) => {
     const scaledLeft = boundingArea.left * displayScale;
     const scaledTop = boundingArea.top * displayScale;
     const scaledWidth = (boundingArea.right - boundingArea.left) * displayScale;
-    const scaledHeight = (boundingArea.bottom - boundingArea.top) * displayScale;
+    const scaledHeight =
+      (boundingArea.bottom - boundingArea.top) * displayScale;
 
     const boundingBox = new fabric.Rect({
       left: scaledLeft,
@@ -236,7 +247,7 @@ const DesignEditor = forwardRef(({ setCanvas, productId, template }, ref) => {
     boundingBoxRef.current = boundingBox;
     canvas.add(boundingBox);
     canvas.requestRenderAll();
-  }, [boundingArea, displayScale]);
+  }, [boundingArea, displayScale, selectedVariant]);
 
   // Constrain object movement within the (scaled) bounding area.
   useEffect(() => {
@@ -256,7 +267,7 @@ const DesignEditor = forwardRef(({ setCanvas, productId, template }, ref) => {
       if (obj.top + obj.height * obj.scaleY > scaledBottom)
         obj.top = scaledBottom - obj.height * obj.scaleY;
     });
-  }, [boundingArea, displayScale]);
+  }, [boundingArea, displayScale, selectedVariant]);
 
   // Constrain object scaling within the (scaled) bounding area.
   useEffect(() => {
@@ -281,7 +292,7 @@ const DesignEditor = forwardRef(({ setCanvas, productId, template }, ref) => {
       if (obj.top + newHeight > scaledBottom)
         obj.scaleY = Math.min(scaleY, (scaledBottom - obj.top) / obj.height);
     });
-  }, [boundingArea, displayScale]);
+  }, [boundingArea, displayScale, selectedVariant]);
 
   return (
     <div>
@@ -294,17 +305,18 @@ const DesignEditor = forwardRef(({ setCanvas, productId, template }, ref) => {
       {!isMockupLoading && !isMockupError && (
         <>
           <div className="mb-4">
-            {variantImages.map((variant) => (
+            {variantImages.map((variant, index) => (
               <Button
                 key={variant.id}
-                type={variant.id === selectedVariant ? "primary" : "default"}
+                type={
+                  index === 0 && selectedVariant === variant.variantId
+                    ? "primary"
+                    : variant.id === selectedVariant
+                    ? "primary"
+                    : "default"
+                }
                 shape="round"
-                onClick={() => setSelectedVariant(variant.id)}
-                style={{
-                  backgroundColor:
-                    variant.id === selectedVariant ? "#1890ff" : "",
-                  color: variant.id === selectedVariant ? "white" : "",
-                }}
+                onClick={() => setSelectedVariant(variant.id)} // Set selected variant on click
               >
                 {variant.label}
               </Button>
