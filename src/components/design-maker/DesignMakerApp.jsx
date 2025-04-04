@@ -6,25 +6,35 @@ import Footer from "../layout/Footer";
 import DesignEditor from "../ui/DesignEditor";
 import UploadInstructionsModal from "../ui/UploadInstructionsModal";
 import FileLibraryModal from "../ui/FileLibraryModal";
-
 import { Layout } from "antd";
+import { useParams } from "react-router-dom";
+import { useProductById } from "../../hooks/useProducts";
 
 function DesignMakerApp() {
+  const { productId } = useParams();
   const [activeSection, setActiveSection] = useState("Product");
+  const { product, isLoading, isError } = useProductById(productId);
   const canvasRef = useRef(null);
   const [fabricCanvas, setFabricCanvas] = useState(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [isFileLibraryVisible, setIsFileLibraryVisible] = useState(false);
   const [selectedColor, setSelectedColor] = useState("black");
+  const [template, setTemplate] = useState(null);
 
   const handleOpenModal = () => setIsModalVisible(true);
   const handleCloseModal = () => setIsModalVisible(false);
   const handleOpenFileLibrary = () => setIsFileLibraryVisible(true);
   const handleCloseFileLibrary = () => setIsFileLibraryVisible(false);
 
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
+  if (isError) {
+    return <div>Error loading product.</div>;
+  }
   return (
     <Layout className="w-full h-screen flex flex-col">
-      <Header />
+      <Header initialValue={product} />
 
       <div className="flex flex-row flex-1 relative">
         <Sidebar
@@ -37,12 +47,14 @@ function DesignMakerApp() {
         {/* Tools Panel */}
         <div className="w-1xl bg-gray-100 p-4 border-r overflow-y-auto">
           <MainContent
-            activeSection={activeSection}
             canvas={fabricCanvas}
-            isModalVisible={isModalVisible}
-            handleCloseModal={handleCloseModal}
+            productDetail={product}
+            setTemplate={setTemplate}
             selectedColor={selectedColor}
+            activeSection={activeSection}
+            isModalVisible={isModalVisible}
             setSelectedColor={setSelectedColor}
+            handleCloseModal={handleCloseModal}
           />
         </div>
 
@@ -52,8 +64,9 @@ function DesignMakerApp() {
             {
               <DesignEditor
                 ref={canvasRef}
+                template={template}
+                productId={productId}
                 setCanvas={setFabricCanvas}
-                selectedColor={selectedColor}
               />
             }
           </div>

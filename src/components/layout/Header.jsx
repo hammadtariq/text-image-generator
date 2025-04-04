@@ -1,11 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-function Header() {
-  const [history, setHistory] = useState(["Unisex Hoodie"]);
+function Header({ initialValue }) {
+  const product = initialValue.product;
+  const [history, setHistory] = useState([product.title]);
   const [currentIndex, setCurrentIndex] = useState(0);
+
+  useEffect(() => {
+    // Reset history if the initial value changes
+    setHistory([product.title]);
+    setCurrentIndex(0);
+  }, [product.title]);
+
   const currentValue = history[currentIndex];
 
-  // Handle input change and update history
   const handleChange = (e) => {
     const newText = e.target.value;
     const newHistory = [...history.slice(0, currentIndex + 1), newText];
@@ -13,14 +20,12 @@ function Header() {
     setCurrentIndex(newHistory.length - 1);
   };
 
-  // Undo function
   const handleUndo = () => {
     if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1);
     }
   };
 
-  // Redo function
   const handleRedo = () => {
     if (currentIndex < history.length - 1) {
       setCurrentIndex(currentIndex + 1);
@@ -28,18 +33,17 @@ function Header() {
   };
 
   return (
-    <div className="flex items-center justify-between border rounded-md p-4 py-5">
+    <div className="flex items-center justify-between border rounded-md p-3">
       <div className="flex items-center gap-2">
         <input
           type="text"
-          className="border rounded-md px-3 py-1 font-semibold focus:outline-none"
+          className="border rounded-md px-3 py-2 font-semibold focus:outline-none"
+          style={{
+            width: `${Math.max(currentValue.length, 5)}ch`, // Ensures minimum width of 5 characters
+          }}
           value={currentValue}
           onChange={handleChange}
-        />{" "}
-        |
-        <a href="#" className="text-blue-600 text-sm">
-          Change product
-        </a>
+        />
       </div>
       <div className="flex items-center gap-2 text-gray-400">
         <div className="mr-20">
@@ -47,7 +51,7 @@ function Header() {
             onClick={handleUndo}
             disabled={currentIndex === 0}
             className={`hover:text-gray-600 mr-3 text-3xl ${
-              currentIndex === 0 ? "opacity-50 cursor-not-allowed text-3xl" : ""
+              currentIndex === 0 ? "opacity-50 cursor-not-allowed" : ""
             }`}
           >
             ↩
@@ -55,9 +59,9 @@ function Header() {
           <button
             onClick={handleRedo}
             disabled={currentIndex === history.length - 1}
-            className={`hover:text-gray-600 text-3xl${
+            className={`hover:text-gray-600 text-3xl ${
               currentIndex === history.length - 1
-                ? "opacity-50 cursor-not-allowed text-3xl"
+                ? "opacity-50 cursor-not-allowed"
                 : ""
             }`}
           >

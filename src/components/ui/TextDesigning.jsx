@@ -1,12 +1,19 @@
 import { useState, useEffect } from "react";
 import { Textbox, Control, util } from "fabric";
-import { Card } from "antd";
+import { Card, ColorPicker } from "antd";
 import WebFont from "webfontloader";
+
+const deleteIcon =
+  "data:image/svg+xml,%3C%3Fxml version='1.0' encoding='utf-8'%3F%3E%3C!DOCTYPE svg PUBLIC '-//W3C//DTD SVG 1.1//EN' 'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd'%3E%3Csvg version='1.1' id='Ebene_1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' x='0px' y='0px' width='595.275px' height='595.275px' viewBox='200 215 230 470' xml:space='preserve'%3E%3Ccircle style='fill:%23F44336;' cx='299.76' cy='439.067' r='218.516'/%3E%3Cg%3E%3Crect x='267.162' y='307.978' transform='matrix(0.7071 -0.7071 0.7071 0.7071 -222.6202 340.6915)' style='fill:white;' width='65.545' height='262.18'/%3E%3Crect x='266.988' y='308.153' transform='matrix(0.7071 0.7071 -0.7071 0.7071 398.3889 -83.3116)' style='fill:white;' width='65.544' height='262.179'/%3E%3C/g%3E%3C/svg%3E";
+
+const deleteImg = document.createElement("img");
+deleteImg.src = deleteIcon;
 
 function TextDesigning({ canvas }) {
   const [text, setText] = useState("");
   const [showMore, setShowMore] = useState(false);
   const [textPresets, setTextPresets] = useState([]);
+  const [selectedColor, setSelectedColor] = useState("#000000");
 
   useEffect(() => {
     if (!canvas) return;
@@ -33,6 +40,7 @@ function TextDesigning({ canvas }) {
         generateTextPreviews(fonts);
       },
     });
+
     const generateTextPreviews = (fonts) => {
       const presets = fonts.map((font) => ({
         text: font,
@@ -52,6 +60,25 @@ function TextDesigning({ canvas }) {
     };
   }, [canvas]);
 
+  useEffect(() => {
+    if (!canvas) return;
+
+    // Handle double-click text editing
+    const enableTextEditing = (event) => {
+      const target = event.target;
+      if (target && target.type === "textbox") {
+        target.enterEditing();
+        target.selectAll();
+      }
+    };
+
+    canvas.on("mouse:dblclick", enableTextEditing);
+
+    return () => {
+      canvas.off("mouse:dblclick", enableTextEditing); // Cleanup event on unmount
+    };
+  }, [canvas]);
+
   const generateTextImage = (font) => {
     const canvas = document.createElement("canvas");
     canvas.width = 200;
@@ -64,12 +91,6 @@ function TextDesigning({ canvas }) {
     ctx.fillText(font, 10, 50);
     return canvas.toDataURL();
   };
-
-  const deleteIcon =
-    "data:image/svg+xml,%3C%3Fxml version='1.0' encoding='utf-8'%3F%3E%3C!DOCTYPE svg PUBLIC '-//W3C//DTD SVG 1.1//EN' 'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd'%3E%3Csvg version='1.1' id='Ebene_1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' x='0px' y='0px' width='595.275px' height='595.275px' viewBox='200 215 230 470' xml:space='preserve'%3E%3Ccircle style='fill:%23F44336;' cx='299.76' cy='439.067' r='218.516'/%3E%3Cg%3E%3Crect x='267.162' y='307.978' transform='matrix(0.7071 -0.7071 0.7071 0.7071 -222.6202 340.6915)' style='fill:white;' width='65.545' height='262.18'/%3E%3Crect x='266.988' y='308.153' transform='matrix(0.7071 0.7071 -0.7071 0.7071 398.3889 -83.3116)' style='fill:white;' width='65.544' height='262.179'/%3E%3C/g%3E%3C/svg%3E";
-
-  const deleteImg = document.createElement("img");
-  deleteImg.src = deleteIcon;
 
   const addTextToCanvas = (presetText, style) => {
     const textObj = new Textbox(presetText, {
@@ -104,14 +125,13 @@ function TextDesigning({ canvas }) {
     canvas.renderAll();
   };
 
-  // Enable text editing on double click
-  canvas.on("mouse:dblclick", (event) => {
-    const target = event.target;
-    if (target && target.type === "textbox") {
-      target.enterEditing();
-      target.selectAll();
+  const updateSelectedTextColor = (color) => {
+    const activeObject = canvas.getActiveObject();
+    if (activeObject && activeObject.type === "textbox") {
+      activeObject.set("fill", color);
+      canvas.renderAll();
     }
-  });
+  };
 
   function deleteObject(_eventData, transform) {
     const canvas = transform.target.canvas;
@@ -134,13 +154,10 @@ function TextDesigning({ canvas }) {
       <h3 className="font-semibold">Add Text</h3>
       <form
         onSubmit={(e) => {
-          e.preventDefault(); // Prevent page reload
+          e.preventDefault();
           if (text.trim()) {
-            addTextToCanvas(text, {
-              color: "black",
-              fontFamily: "Playfair Display",
-            });
-            setText(""); // Clear text after adding
+            addTextToCanvas(text, { fontFamily: "Playfair Display" });
+            setText("");
           }
         }}
       >
@@ -160,6 +177,18 @@ function TextDesigning({ canvas }) {
           Add Custom Text
         </button>
       </form>
+
+      <div className="mt-4">
+        <h4 className="font-semibold mb-2">Text Color</h4>
+        <ColorPicker
+          value={selectedColor}
+          onChange={(color) => {
+            const hexColor = color.toHexString();
+            setSelectedColor(hexColor);
+            updateSelectedTextColor(hexColor);
+          }}
+        />
+      </div>
 
       <div className="flex flex-col space-y-2 mt-4">
         <div className="flex justify-between">

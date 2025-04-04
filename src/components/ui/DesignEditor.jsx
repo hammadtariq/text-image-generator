@@ -1,35 +1,148 @@
 import { useEffect, forwardRef, useRef, useState, useCallback } from "react";
 import * as fabric from "fabric";
-const productSides = {
-  frontImage:
-    "https://upload.wikimedia.org/wikipedia/commons/2/24/Blue_Tshirt.jpg", // Existing image for left chest view
-  sideImage:
-    "https://upload.wikimedia.org/wikipedia/commons/2/24/Blue_Tshirt.jpg", // Right sleeve view
-  backImage:
-    "https://upload.wikimedia.org/wikipedia/commons/2/24/Blue_Tshirt.jpg", // Left sleeve view
-};
+import { Button } from "antd";
+import { useProductMockup } from "../../hooks/useMockup";
 
-const DesignEditor = forwardRef(({ setCanvas,  }, ref) => {
-  const [selectedSide, setSelectedSide] = useState("frontImage");
-  const errorMessageRef = useRef("");
+const BASE_URL = import.meta.env.VITE_BASE_URL;
 
-  const loadImage = useCallback((fabricCanvas, imageUrl) => {
-    const imgElement = document.createElement("img");
-    imgElement.src = imageUrl;
-    imgElement.crossOrigin = "anonymous";
+const DesignEditor = forwardRef(({ setCanvas, productId, template }, ref) => {
+  const {
+    product: productMockup,
+    isLoading: isMockupLoading,
+    isError: isMockupError,
+  } = useProductMockup(productId);
 
-    imgElement.onload = () => {
-      const img = new fabric.FabricImage(imgElement, {
-        scaleX: fabricCanvas.width / imgElement.width,
-        scaleY: fabricCanvas.height / imgElement.height,
-        selectable: false,
-      });
+  const fabricCanvasRef = useRef(null);
+  const [selectedVariant, setSelectedVariant] = useState(null);
+  const [variantImages, setVariantImages] = useState([]);
+  const [boundingArea, setBoundingArea] = useState(null);
+  const [errorMessage, setErrorMessage] = useState("");
 
-      fabricCanvas.set("backgroundImage", img);
-      fabricCanvas.requestRenderAll();
+  // Utility function to format placement labels
+  const formatPlacementLabel = (placement) => {
+    const words = placement.split("_").filter((word) => word !== "embroidery");
+    const positionIndicators = [
+      "left",
+      "right",
+      "top",
+      "bottom",
+      "front",
+      "back",
+      "side",
+      "inside",
+      "outside",
+    ];
+    const positions = words.filter((word) => positionIndicators.includes(word));
+    const remainingWords = words.filter(
+      (word) => !positionIndicators.includes(word)
+    );
+
+    return [...positions, ...remainingWords]
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+  };
+
+  // Load image and set background
+  const loadImage = useCallback(
+    (fabricCanvas, imageUrl, backgroundColor = "#ffffff") => {
+      if (!imageUrl) return;
+
+      const imgElement = document.createElement("img");
+      imgElement.src = imageUrl;
+      imgElement.crossOrigin = "anonymous";
+
+      imgElement.onload = () => {
+        const img = new fabric.Image(imgElement, {
+          scaleX: fabricCanvas.width / imgElement.width,
+          scaleY: fabricCanvas.height / imgElement.height,
+          selectable: false,
+        });
+
+        fabricCanvas.set("backgroundColor", backgroundColor);
+        fabricCanvas.set("backgroundImage", img);
+        fabricCanvas.requestRenderAll();
+      };
+    },
+    []
+  );
+
+  // Load the mockup variant and templates, then update the canvas
+  useEffect(() => {
+    if (
+      !productMockup ||
+      !productMockup.variant_mapping ||
+      !productMockup.templates
+    )
+      return;
+
+    const selectedVariantData = productMockup.variant_mapping.find((variant) =>
+      template
+        ? variant.variant_id === template.id
+        : variant.variant_id === productMockup.variant_mapping[0].variant_id
+    );
+
+    if (!selectedVariantData) {
+      setErrorMessage("Selected variant not found.");
+      return;
+    }
+
+    const filteredTemplates = selectedVariantData?.templates || [];
+    const variantTemplateImages = filteredTemplates
+      .map((t) => {
+        const templateData = productMockup.templates.find(
+          (td) => t.template_id === td.template_id
+        );
+        if (!templateData) return null;
+
+        return {
+          id: templateData.template_id,
+          variantId: selectedVariantData.variant_id,
+          label: formatPlacementLabel(t.placement),
+          imageUrl: templateData.image_url,
+          backgroundUrl: templateData.background_url,
+          backgroundColor: templateData.background_color,
+          printfileId: templateData.printfile_id,
+          templateWidth: templateData.template_width,
+          templateHeight: templateData.template_height,
+          printAreaWidth: templateData.print_area_width,
+          printAreaHeight: templateData.print_area_height,
+          printAreaTop: templateData.print_area_top,
+          printAreaLeft: templateData.print_area_left,
+          isTemplateOnFront: templateData.is_template_on_front,
+          orientation: templateData.orientation,
+        };
+      })
+      .filter(Boolean);
+
+    setVariantImages(variantTemplateImages);
+    setSelectedVariant(selectedVariantData.variant_id);
+  }, [productMockup, template]);
+
+  // Utility function to update the bounding area based on template dimensions
+  const updateBoundingArea = useCallback((template) => {
+    const { printAreaWidth, printAreaHeight, printAreaTop, printAreaLeft } =
+      template;
+
+    const newBoundingArea = {
+      left: printAreaLeft,
+      top: printAreaTop,
+      right: printAreaLeft + printAreaWidth,
+      bottom: printAreaTop + printAreaHeight,
     };
+
+    // Update boundingArea only if it has changed to avoid unnecessary re-renders
+    setBoundingArea((prevArea) =>
+      prevArea &&
+      prevArea.left === newBoundingArea.left &&
+      prevArea.top === newBoundingArea.top &&
+      prevArea.right === newBoundingArea.right &&
+      prevArea.bottom === newBoundingArea.bottom
+        ? prevArea
+        : newBoundingArea
+    );
   }, []);
 
+  // Initialize canvas, load image, and draw bounding area
   useEffect(() => {
     if (!ref?.current) return;
 
@@ -39,110 +152,85 @@ const DesignEditor = forwardRef(({ setCanvas,  }, ref) => {
       backgroundColor: "white",
     });
 
+    fabricCanvasRef.current = fabricCanvas;
     setCanvas(fabricCanvas);
 
-    loadImage(fabricCanvas, productSides[selectedSide]);
+    const selectedImage = variantImages.find(
+      (v) => v.variantId === selectedVariant || v.id === selectedVariant
+    );
 
-    // Define bounding area
-    const boundingArea = {
-      left: 125,
-      top: 100,
-      right: 370,
-      bottom: 250,
-    };
+    if (selectedImage) {
+      loadImage(
+        fabricCanvas,
+        selectedImage.imageUrl,
+        selectedImage.backgroundColor
+      );
+      updateBoundingArea(selectedImage); // Update bounding area based on selected template
+    }
 
-    fabricCanvas.on("object:moving", (e) => {
-      const obj = e.target;
-      if (!obj) return;
-
-      obj.setCoords();
-      let outOfBounds = false;
-
-      if (obj.left < boundingArea.left) {
-        obj.left = boundingArea.left;
-        outOfBounds = true;
-      }
-      if (obj.top < boundingArea.top) {
-        obj.top = boundingArea.top;
-        outOfBounds = true;
-      }
-      if (obj.left + obj.getScaledWidth() > boundingArea.right) {
-        obj.left = boundingArea.right - obj.getScaledWidth();
-        outOfBounds = true;
-      }
-      if (obj.top + obj.getScaledHeight() > boundingArea.bottom) {
-        obj.top = boundingArea.bottom - obj.getScaledHeight();
-        outOfBounds = true;
-      }
-
-      errorMessageRef.current = outOfBounds
-        ? "Object cannot be moved outside the designated area!"
-        : "";
-    });
-
-    fabricCanvas.on("selection:created", (e) => {
-      const activeObject = e.selected[0];
-
-      if (activeObject) {
-        const canvasWidth = fabricCanvas.getWidth();
-        const canvasHeight = fabricCanvas.getHeight();
-        const objectWidth = activeObject.getScaledWidth();
-        const objectHeight = activeObject.getScaledHeight();
-
-        // Ensure the object is within bounds
-        const leftPosition = Math.min(
-          boundingArea.right - objectWidth,
-          Math.max(boundingArea.left, canvasWidth - objectWidth - 120)
-        );
-        const topPosition = Math.min(
-          boundingArea.bottom - objectHeight,
-          Math.max(boundingArea.top, canvasHeight - objectHeight - 350)
-        );
-
-        activeObject.set({
-          left: leftPosition,
-          top: topPosition,
-        });
-
-        activeObject.setCoords();
-        fabricCanvas.renderAll();
-      }
-    });
+    // Draw the bounding box on the canvas if boundingArea is available
+    if (boundingArea) {
+      const { left, top, right, bottom } = boundingArea;
+      const rect = new fabric.Rect({
+        left,
+        top,
+        width: right - left,
+        height: bottom - top,
+        stroke: "red",
+        strokeWidth: 2,
+        fill: "transparent",
+      });
+      fabricCanvas.add(rect);
+    }
 
     return () => {
       fabricCanvas.dispose();
-      setCanvas(null);
     };
-  }, [ref, setCanvas, selectedSide, loadImage]);
+  }, [
+    ref,
+    setCanvas,
+    selectedVariant,
+    variantImages,
+    loadImage,
+    updateBoundingArea,
+    boundingArea,
+  ]);
 
   return (
     <div>
-      <div className="flex gap-2 mb-2">
-        <button
-          onClick={() => setSelectedSide("frontImage")}
-          className="bg-blue-500 text-white p-2 rounded"
-        >
-          Front Image
-        </button>
-        <button
-          onClick={() => setSelectedSide("sideImage")}
-          className="bg-blue-500 text-white p-2 rounded"
-        >
-          Side Image
-        </button>
-        <button
-          onClick={() => setSelectedSide("backImage")}
-          className="bg-blue-500 text-white p-2 rounded"
-        >
-          Back Image
-        </button>
-      </div>
-      {errorMessageRef.current && (
-        <div className="error-message text-red-500">
-          {errorMessageRef.current}
-        </div>
+      {isMockupLoading && (
+        <p className="text-gray-500">Loading product mockup...</p>
       )}
-      <canvas ref={ref} className="border" />
+      {isMockupError && (
+        <p className="text-red-500">Error loading product. Please try again.</p>
+      )}
+      {!isMockupLoading && !isMockupError && (
+        <>
+          <div className="mb-4">
+            {variantImages.map((variant) => (
+              <Button
+                key={variant.id}
+                type={variant.id === selectedVariant ? "primary" : "default"}
+                shape="round"
+                onClick={() => setSelectedVariant(variant.id)}
+                style={{
+                  backgroundColor:
+                    variant.id === selectedVariant ? "#1890ff" : "",
+                  color: variant.id === selectedVariant ? "white" : "",
+                }}
+              >
+                {variant.label}
+              </Button>
+            ))}
+          </div>
+
+          {errorMessage && (
+            <div className="error-message text-red-500">{errorMessage}</div>
+          )}
+
+          <canvas ref={ref} className="border" />
+        </>
+      )}
     </div>
   );
 });

@@ -1,8 +1,9 @@
 import { useState } from "react";
 
-function ProductDesigning({ selectedColor, setSelectedColor }) {
-  const [selectedTechnique, setSelectedTechnique] = useState("DTG Printing");
+function ProductDesigning({ productDetails, onTemplateChange }) {
+  const [selectedTechnique, setSelectedTechnique] = useState(null);
   const [selectedSizes, setSelectedSizes] = useState([]);
+  const [selectedColor, setSelectedColor] = useState(null);
 
   const handleSizeSelection = (size) => {
     setSelectedSizes((prevSizes) =>
@@ -12,60 +13,88 @@ function ProductDesigning({ selectedColor, setSelectedColor }) {
     );
   };
 
+  const handleColorSelection = (v) => {
+    debugger
+    onTemplateChange(v)
+    setSelectedColor(v.color);
+  };
+
   return (
-    <div>
-      <h2 className="text-lg font-bold">
-        Unisex Premium Hoodie | Cotton Heritage M2580
-      </h2>
-      <p className="text-gray-500">📌 Pricing & file guidelines</p>
+    <div className="space-y-6">
+      <h2 className="text-lg font-bold">{productDetails.product.title}</h2>
+
+      <div className="flex items-center">
+        <span className="text-sm text-gray-600"> 📌 </span>
+        <button className="text-blue-500 underline text-sm ms-1 cursor-pointer">
+          Pricing & file guidelines
+        </button>
+      </div>
+
+      <hr />
+
       {/* Technique Selection */}
-      <div className="mt-4 border-t pt-4">
-        <h3 className="font-semibold">Technique</h3>
-        <div className="flex gap-2">
-          {["DTG Printing", "Embroidery"].map((technique) => (
+      <div>
+        <h3 className="font-semibold mb-2">Technique</h3>
+        <div className="flex gap-2 flex-wrap">
+          {productDetails.product.techniques.map(({ key, display_name }) => (
             <button
-              key={technique}
-              className={`border px-4 py-2 rounded-md ${
-                selectedTechnique === technique
-                  ? "bg-gray-200 border-gray-500"
-                  : "bg-gray-100"
+              key={key}
+              className={`px-3 py-1 text-sm rounded-full border ${
+                selectedTechnique === display_name
+                  ? "bg-blue-500 text-white border-blue-500"
+                  : "bg-white text-gray-700 border-gray-300"
               }`}
-              onClick={() => setSelectedTechnique(technique)}
+              onClick={() => setSelectedTechnique(display_name)}
             >
-              {technique}
+              {display_name}
             </button>
           ))}
         </div>
       </div>
+
       {/* Color Selection */}
-      <div className="mt-4">
-        <h3 className="font-semibold">Color</h3>
-        <div className="flex gap-2">
-          {["black", "gray", "blue", "green"].map((color) => (
+      <div>
+        <h3 className="font-semibold mb-2">Color</h3>
+        <div className="flex gap-2 flex-wrap">
+          {[
+            ...new Map(
+              productDetails.variants.map((v) => [v.color, v])
+            ).values(),
+          ].map((variant) => (
             <div
-              key={color}
-              className={`w-8 h-8 border rounded-full bg-${color}-700 cursor-pointer ${
-                selectedColor === color ? "border-2 border-black" : ""
+              key={variant.color}
+              className={`w-8 h-8 rounded-full border-2 cursor-pointer transition-all duration-200 ${
+                selectedColor === variant.color
+                  ? "border-blue-600 ring-2 ring-blue-300"
+                  : "border-gray-300"
               }`}
-              onClick={() => setSelectedColor(color)}
-            ></div>
+              style={{ backgroundColor: variant.color_code }}
+              onClick={() => handleColorSelection(variant)}
+              title={variant.color}
+            />
           ))}
         </div>
       </div>
+
       {/* Size Selection */}
-      <div className="mt-4">
-        <h3 className="font-semibold">Size</h3>
-        <div className="flex gap-2">
-          {["S", "M", "L", "XL"].map((size) => (
-            <label key={size} className="flex items-center gap-1">
-              <input
-                type="checkbox"
-                checked={selectedSizes.includes(size)}
-                onChange={() => handleSizeSelection(size)}
-              />
-              {size}
-            </label>
-          ))}
+      <div>
+        <h3 className="font-semibold mb-2">Size</h3>
+        <div className="flex gap-2 flex-wrap">
+          {[...new Set(productDetails.variants.map((v) => v.size))].map(
+            (size) => (
+              <label
+                key={size}
+                className="flex items-center gap-1 text-sm px-2 py-1 border rounded-lg cursor-pointer transition hover:bg-gray-100"
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedSizes.includes(size)}
+                  onChange={() => handleSizeSelection(size)}
+                />
+                {size}
+              </label>
+            )
+          )}
         </div>
       </div>
     </div>

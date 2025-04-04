@@ -5,6 +5,9 @@ import ImageDisplay from "./components/ImageDisplay";
 import ProductPreview from "./components/ProductPreview";
 import TShirtCustomizer from "./pages/TShirtCustomizer";
 import DesignMakerApp from "./components/design-maker/DesignMakerApp";
+import '@ant-design/v5-patch-for-react-19';
+import 'default-passive-events';
+
 
 function App() {
   const [generatedImage, setGeneratedImage] = useState(null);
@@ -51,7 +54,7 @@ function App() {
             path="/customizer"
             element={<TShirtCustomizer imageUrl={generatedImageUrl} />}
           />
-          <Route path="/design-maker" element={<DesignMakerApp />} />
+          <Route path="/design-maker/:productId" element={<DesignMakerApp />} />
         </Routes>
       </div>
     </Router>

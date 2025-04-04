@@ -1,21 +1,4 @@
-import { Drawer } from "antd";
-import { useState } from "react";
-import GeneratorForm from "../GeneratorForm";
-import ImageDisplay from "../ImageDisplay";
-import ProductPreview from "../ProductPreview";
-
-function Sidebar({ activeSection, setActiveSection, openUploadModal, canvas }) {
-  const [generatedImage, setGeneratedImage] = useState(null);
-  const [generatedImageUrl, setGeneratedImageUrl] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [open, setOpen] = useState(false);
-  const showDrawer = () => {
-    setOpen(true);
-  };
-  const onClose = () => {
-    setOpen(false);
-  };
-
+function Sidebar({ activeSection, setActiveSection, openUploadModal }) {
   const menuItems = [
     { name: "Product", icon: "👕" },
     { name: "Uploads", icon: "⬆️" },
@@ -37,8 +20,6 @@ function Sidebar({ activeSection, setActiveSection, openUploadModal, canvas }) {
             if (item.name === "Uploads") {
               openUploadModal();
               return; // Don't change active section for "Uploads"
-            } else if (item.name === "AI Generator") {
-              showDrawer();
             }
             setActiveSection(item.name);
           }}
@@ -52,25 +33,6 @@ function Sidebar({ activeSection, setActiveSection, openUploadModal, canvas }) {
           <span className="text-xs">{item.name}</span>
         </button>
       ))}
-      <Drawer
-        title="Basic Drawer"
-        onClose={onClose}
-        open={open}
-        placement="left"
-      >
-        <>
-          <h1 className="text-3xl font-bold mb-8 text-gray-800">
-            Text to Image Generator
-          </h1>
-          <GeneratorForm
-            setGeneratedImage={setGeneratedImage}
-            setGeneratedImageUrl={setGeneratedImageUrl}
-            setLoading={setLoading}
-            loading={loading}
-          />
-          <ImageDisplay image={generatedImage} loading={loading} canvas={canvas} />
-        </>
-      </Drawer>
     </div>
   );
 }

@@ -10,10 +10,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ant-design/v5-patch-for-react-19": "^1.0.3",
     "@tailwindcss/vite": "^4.0.14",
-    "antd": "^5.24.4",
+    "antd": "^5.24.6",
     "axios": "^1.8.4",
-    "fabric": "^6.6.1",
+    "default-passive-events": "^2.0.0",
+    "fabric": "^6.6.2",
     "react": "^19.0.0",
     "react-dnd": "^16.0.1",
     "react-dnd-html5-backend": "^16.0.1",
@@ -26,7 +28,6 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
-    "@types/fabric": "^5.3.10",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
     "@types/webfontloader": "^1.6.38",

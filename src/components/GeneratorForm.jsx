@@ -146,7 +146,7 @@ const GeneratorForm = ({ setGeneratedImage, setGeneratedImageUrl, setLoading, lo
   };
 
   return (
-    <form onSubmit={handleSubmit} className="w-full max-w-md bg-white p-6 rounded-lg shadow-md">
+    <form onSubmit={handleSubmit} className="w-full max-w-md bg-white p-3 rounded-lg shadow-md">
         {errorMessage && (
           <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-lg">
             {errorMessage}
