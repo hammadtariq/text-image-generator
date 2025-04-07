@@ -294,6 +294,47 @@ const DesignEditor = forwardRef(({ setCanvas, productId, template }, ref) => {
     });
   }, [boundingArea, displayScale, selectedVariant]);
 
+  useEffect(() => {
+    const canvas = fabricCanvasRef.current;
+    if (!canvas || !boundingArea) return;
+
+    const scaledLeft = boundingArea.left * displayScale;
+    const scaledTop = boundingArea.top * displayScale;
+    const scaledRight = boundingArea.right * displayScale;
+    const scaledBottom = boundingArea.bottom * displayScale;
+
+    const clamp = (value, min, max) => Math.max(min, Math.min(value, max));
+
+    const repositionIntoBoundingArea = (obj) => {
+      const width = obj.width * obj.scaleX;
+      const height = obj.height * obj.scaleY;
+
+      // Center the object inside the bounding area
+      const centerX = (scaledLeft + scaledRight) / 2 - width / 2;
+      const centerY = (scaledTop + scaledBottom) / 2 - height / 2;
+
+      // Clamp the object position to ensure it stays within the bounds
+      obj.left = clamp(centerX, scaledLeft, scaledRight - width);
+      obj.top = clamp(centerY, scaledTop, scaledBottom - height);
+    };
+
+    const handleObjectAdded = (e) => {
+      const obj = e.target;
+
+      // Avoid repositioning background images or unselectable items
+      if (!obj.selectable || obj === boundingBoxRef.current) return;
+
+      repositionIntoBoundingArea(obj);
+      canvas.requestRenderAll();
+    };
+
+    canvas.on("object:added", handleObjectAdded);
+
+    return () => {
+      canvas.off("object:added", handleObjectAdded);
+    };
+  }, [boundingArea, displayScale]);
+
   return (
     <div>
       {isMockupLoading && (
