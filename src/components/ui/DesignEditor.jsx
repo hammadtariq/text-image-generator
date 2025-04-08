@@ -44,6 +44,22 @@ const DesignEditor = forwardRef(({ setCanvas, productId, template }, ref) => {
       .join(" ");
   };
 
+  const saveDesign = useCallback(() => {
+    if (fabricCanvasRef?.current) {
+      const selectedImage = variantImages.find((v) => v.id === selectedVariant);
+      if (!selectedImage) return;
+      debugger;
+      const canvas = fabricCanvasRef.current;
+      const json = canvas.toJSON();
+
+      // Save the design with a unique key based on the selected image's id
+      localStorage.setItem(
+        `canvasState-${selectedImage.id}`,
+        JSON.stringify(json)
+      );
+    }
+  }, [variantImages, selectedVariant]);
+
   // Load image and set as background, scaling it by displayScale.
   const loadImage = useCallback(
     (
@@ -141,7 +157,8 @@ const DesignEditor = forwardRef(({ setCanvas, productId, template }, ref) => {
       .filter(Boolean);
 
     setVariantImages(variantTemplateImages);
-    setSelectedVariant(selectedVariantData.variant_id);
+    const variantId = selectedVariantData.templates[0].template_id;
+    setSelectedVariant(variantId);
   }, [productMockup, template]);
 
   // Update the bounding area based on template dimensions (no scaling yet)
@@ -170,12 +187,29 @@ const DesignEditor = forwardRef(({ setCanvas, productId, template }, ref) => {
     );
   }, []);
 
+  const loadData = useCallback((selectedImageId) => {
+    // Load the saved design for the selected variant from localStorage or the state
+    const savedState = localStorage.getItem(`canvasState-${selectedImageId}`);
+    const parsedData = JSON.parse(savedState);
+
+    if (parsedData) {
+      const fabricCanvas = fabricCanvasRef.current;
+
+      fabricCanvas.loadFromJSON(parsedData, () => {
+        // After everything is loaded, loop through objects and disable controls
+        fabricCanvas.getObjects().forEach((obj) => {
+          obj.hasControls = false;
+        });
+
+        fabricCanvas.renderAll();
+      });
+    }
+  }, []);
+
   // Initialize canvas, load image, and update bounding area
   useEffect(() => {
     if (!ref?.current) return;
-    const selectedImage = variantImages.find(
-      (v) => v.variantId === selectedVariant || v.id === selectedVariant
-    );
+    const selectedImage = variantImages.find((v) => v.id === selectedVariant);
     if (!selectedImage) return;
 
     // Calculate a display scale to shrink the template if needed.
@@ -193,17 +227,23 @@ const DesignEditor = forwardRef(({ setCanvas, productId, template }, ref) => {
     fabricCanvasRef.current = fabricCanvas;
     setCanvas(fabricCanvas);
 
-    loadImage(
-      fabricCanvas,
-      selectedImage.imageUrl,
-      selectedImage.templateWidth,
-      selectedImage.templateHeight,
-      selectedImage.backgroundColor,
-      scale
-    );
+    loadData(selectedImage.id);
+
+    setTimeout(() => {
+      loadImage(
+        fabricCanvas,
+        selectedImage.imageUrl,
+        selectedImage.templateWidth,
+        selectedImage.templateHeight,
+        selectedImage.backgroundColor,
+        scale
+      );
+    }, 150);
+
     updateBoundingArea(selectedImage); // boundingArea remains in original pixel space
 
     return () => {
+      saveDesign();
       fabricCanvas.dispose();
     };
   }, [
@@ -213,6 +253,8 @@ const DesignEditor = forwardRef(({ setCanvas, productId, template }, ref) => {
     variantImages,
     loadImage,
     updateBoundingArea,
+    loadData,
+    saveDesign,
   ]);
 
   // Draw (or update) the bounding box using the displayScale factor.
@@ -357,7 +399,7 @@ const DesignEditor = forwardRef(({ setCanvas, productId, template }, ref) => {
                     : "default"
                 }
                 shape="round"
-                onClick={() => setSelectedVariant(variant.id)} // Set selected variant on click
+                onClick={() => setSelectedVariant(variant.id)} // Set selected variant and save the design
               >
                 {variant.label}
               </Button>
