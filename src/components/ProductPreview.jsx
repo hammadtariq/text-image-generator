@@ -1,6 +1,6 @@
 // components/ProductPreview.jsx
 import { useEffect, useRef } from 'react';
-import * as fabric from 'fabric'; // Import from fabric.mjs
+// import * as fabric from 'fabric'; // Import from fabric.mjs
 
 const ProductPreview = ({ imageUrl }) => {
   const canvasRef = useRef(null);

@@ -1,5 +1,34 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { Input } from "antd";
 import * as fabric from "fabric";
+
+const images = [
+  {
+    id: 1,
+    url: "https://upload.wikimedia.org/wikipedia/commons/6/6a/JavaScript-logo.png",
+    name: "JavaScript",
+  },
+  {
+    id: 2,
+    url: "https://upload.wikimedia.org/wikipedia/commons/1/18/C_Programming_Language.svg",
+    name: "C",
+  },
+  {
+    id: 3,
+    url: "https://upload.wikimedia.org/wikipedia/commons/1/19/C_Logo.png",
+    name: "C++",
+  },
+  {
+    id: 4,
+    url: "https://upload.wikimedia.org/wikipedia/commons/0/0a/Python.svg",
+    name: "Python",
+  },
+  {
+    id: 5,
+    url: "https://upload.wikimedia.org/wikipedia/commons/4/4f/Csharp_Logo.png",
+    name: "C#",
+  },
+];
 
 // Delete icon for custom control
 const deleteIcon =
@@ -7,7 +36,13 @@ const deleteIcon =
 
 const deleteImg = document.createElement("img");
 deleteImg.src = deleteIcon;
-const ImageDisplay = ({ image, loading, canvas }) => {
+
+function QuickDesigns({ canvas }) {
+  const [query, setQuery] = useState("");
+  const filteredImages = images.filter((img) =>
+    img.name.toLowerCase().includes(query.toLowerCase())
+  );
+
   useEffect(() => {
     return () => {
       if (canvas) {
@@ -112,25 +147,36 @@ const ImageDisplay = ({ image, loading, canvas }) => {
   }
 
   return (
-    <div className="mt-8 w-full max-w-md">
-      {loading && <p className="text-center text-gray-600">Loading...</p>}
-      {image && !loading && (
-        <div
-          className="bg-white p-4 rounded-lg shadow-md cursor-pointer"
-          onClick={() => addImageToCanvas(image)}
-        >
-          <img src={image} alt="Generated" className="w-full rounded-lg" />
-          <a
-            href={image}
-            download="generated-image.png"
-            className="block mt-4 text-center text-blue-500 hover:underline"
-          >
-            Download Image
-          </a>
-        </div>
-      )}
+    <div className="p-4 w-full">
+      <h3 className="font-semibold">Quick Designs</h3>
+      <Input
+        className="mb-4"
+        placeholder="Search programming logos..."
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+      />
+      <div className="grid grid-cols-2 gap-4">
+        {filteredImages.length > 0 ? (
+          filteredImages.map((img) => (
+            <div
+              key={img.id}
+              className="border p-2 cursor-pointer hover:shadow-lg relative"
+              onClick={() => addImageToCanvas(img.url)}
+            >
+              <img
+                src={img.url}
+                alt={img.name}
+                className="w-full h-32 object-contain bg-white p-2"
+              />
+              <p className="text-center text-sm mt-1">{img.name}</p>
+            </div>
+          ))
+        ) : (
+          <p className="text-gray-500">No images found.</p>
+        )}
+      </div>
     </div>
   );
-};
+}
 
-export default ImageDisplay;
+export default QuickDesigns;
