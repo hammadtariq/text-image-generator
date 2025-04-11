@@ -60,7 +60,7 @@ function DesignMakerApp() {
 
         {/* Design Canvas Area */}
         <div className="flex-1 flex justify-center items-center bg-gray-200">
-          <div className="border bg-white p-4 w-[80%] h-[90%] flex items-center justify-center shadow-md">
+          <div className="border bg-white p-4 w-[90%] flex items-center justify-center shadow-md">
             {
               <DesignEditor
                 ref={canvasRef}
@@ -85,6 +85,7 @@ function DesignMakerApp() {
       {/* File Library Modal */}
       {isFileLibraryVisible && (
         <FileLibraryModal
+          canvas={fabricCanvas}
           isVisible={isFileLibraryVisible} // Controlled by state
           onClose={handleCloseFileLibrary}
         />

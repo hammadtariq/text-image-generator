@@ -44,11 +44,27 @@ const DesignEditor = forwardRef(({ setCanvas, productId, template }, ref) => {
       .join(" ");
   };
 
+  useEffect(() => {
+    if (!ref?.current) return;
+    const canvasEl = ref.current;
+
+    const handleTouchStart = (e) => {
+      e.preventDefault();
+    };
+
+    canvasEl.addEventListener("touchstart", handleTouchStart, {
+      passive: false,
+    });
+
+    return () => {
+      canvasEl.removeEventListener("touchstart", handleTouchStart);
+    };
+  }, [ref]);
+
   const saveDesign = useCallback(() => {
     if (fabricCanvasRef?.current) {
       const selectedImage = variantImages.find((v) => v.id === selectedVariant);
       if (!selectedImage) return;
-      debugger;
       const canvas = fabricCanvasRef.current;
       const json = canvas.toJSON();
 
@@ -375,7 +391,7 @@ const DesignEditor = forwardRef(({ setCanvas, productId, template }, ref) => {
     return () => {
       canvas.off("object:added", handleObjectAdded);
     };
-  }, [boundingArea, displayScale]);
+  }, [boundingArea, displayScale, selectedVariant]);
 
   return (
     <div>
