@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -7,17 +6,13 @@ import {
   Navigate,
   useLocation,
 } from "react-router-dom";
-import GeneratorForm from "./components/GeneratorForm";
-import ImageDisplay from "./components/ImageDisplay";
-import ProductPreview from "./components/ProductPreview";
-import TShirtCustomizer from "./pages/TShirtCustomizer";
 import DesignMakerApp from "./components/design-maker/DesignMakerApp";
 import "@ant-design/v5-patch-for-react-19";
 import { Layout, Menu } from "antd";
 
 const { Header, Content } = Layout;
 
-function AppRoutes({ generatedImageUrl }) {
+function AppRoutes() {
   const location = useLocation();
 
   const menuItems = [
@@ -30,8 +25,8 @@ function AppRoutes({ generatedImageUrl }) {
       label: <Link to="/customizer">T-Shirt Customizer</Link>,
     },
     {
-      key: "/design-maker/123",
-      label: <Link to="/design-maker/123">Design Maker</Link>,
+      key: "/design-maker/766",
+      label: <Link to="/design-maker/766">Design Maker</Link>,
     },
   ];
 
@@ -50,11 +45,11 @@ function AppRoutes({ generatedImageUrl }) {
         <Routes>
           <Route
             path="/"
-            element={<Navigate to="/design-maker/123" replace />}
+            element={<Navigate to="/design-maker/766" replace />}
           />
           <Route
             path="/customizer"
-            element={<TShirtCustomizer imageUrl={generatedImageUrl} />}
+            element={<Navigate to="/design-maker/766" replace />}
           />
           <Route path="/design-maker/:productId" element={<DesignMakerApp />} />
         </Routes>
@@ -64,13 +59,9 @@ function AppRoutes({ generatedImageUrl }) {
 }
 
 function App() {
-  const [generatedImage, setGeneratedImage] = useState(null);
-  const [generatedImageUrl, setGeneratedImageUrl] = useState(null);
-  const [loading, setLoading] = useState(false);
-
   return (
     <Router>
-      <AppRoutes generatedImageUrl={generatedImageUrl} />
+      <AppRoutes />
     </Router>
   );
 }
