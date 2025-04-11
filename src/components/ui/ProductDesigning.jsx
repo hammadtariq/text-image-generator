@@ -1,3 +1,4 @@
+import { Button } from "antd";
 import { useState } from "react";
 
 function ProductDesigning({ productDetails, onTemplateChange }) {
@@ -14,8 +15,7 @@ function ProductDesigning({ productDetails, onTemplateChange }) {
   };
 
   const handleColorSelection = (v) => {
-    debugger
-    onTemplateChange(v)
+    onTemplateChange(v);
     setSelectedColor(v.color);
   };
 
@@ -36,19 +36,24 @@ function ProductDesigning({ productDetails, onTemplateChange }) {
       <div>
         <h3 className="font-semibold mb-2">Technique</h3>
         <div className="flex gap-2 flex-wrap">
-          {productDetails.product.techniques.map(({ key, display_name }) => (
-            <button
-              key={key}
-              className={`px-3 py-1 text-sm rounded-full border ${
-                selectedTechnique === display_name
-                  ? "bg-blue-500 text-white border-blue-500"
-                  : "bg-white text-gray-700 border-gray-300"
-              }`}
-              onClick={() => setSelectedTechnique(display_name)}
-            >
-              {display_name}
-            </button>
-          ))}
+          {productDetails.product.techniques.map(
+            ({ key, display_name }, index) => (
+              <Button
+                key={key}
+                type={
+                  index === 0 && !selectedTechnique
+                    ? "primary"
+                    : key === selectedTechnique
+                    ? "primary"
+                    : "default"
+                }
+                shape="round"
+                onClick={() => setSelectedTechnique(key)}
+              >
+                {display_name}
+              </Button>
+            )
+          )}
         </div>
       </div>
 

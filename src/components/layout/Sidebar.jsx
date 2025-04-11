@@ -3,12 +3,12 @@ function Sidebar({ activeSection, setActiveSection, openUploadModal }) {
     { name: "Product", icon: "👕" },
     { name: "Uploads", icon: "⬆️" },
     { name: "Text", icon: "🔤" },
-    { name: "Saved designs", icon: "🖼️" },
-    { name: "Clipart", icon: "😀" },
+    // { name: "Saved designs", icon: "🖼️" },
+    // { name: "Clipart", icon: "😀" },
     { name: "Quick Designs", icon: "✨" },
     { name: "AI Generator", icon: "🤖" },
-    { name: "Fill", icon: "🪣" },
-    { name: "Layers", icon: "📚" },
+    // { name: "Fill", icon: "🪣" },
+    // { name: "Layers", icon: "📚" },
   ];
 
   return (
