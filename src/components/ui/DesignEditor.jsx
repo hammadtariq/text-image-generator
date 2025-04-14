@@ -5,430 +5,506 @@ import { useProductMockup } from "../../hooks/useMockup";
 
 const MAX_DISPLAY_WIDTH = 600; // desired maximum display width (px)
 
-const DesignEditor = forwardRef(({ setCanvas, productId, template }, ref) => {
-  const {
-    product: productMockup,
-    isLoading: isMockupLoading,
-    isError: isMockupError,
-  } = useProductMockup(productId);
+const DesignEditor = forwardRef(
+  ({ setCanvas, productId, template, setHistory, setHistoryPointer }, ref) => {
+    const {
+      product: productMockup,
+      isLoading: isMockupLoading,
+      isError: isMockupError,
+    } = useProductMockup(productId);
 
-  const fabricCanvasRef = useRef(null);
-  const boundingBoxRef = useRef(null);
-  const [selectedVariant, setSelectedVariant] = useState(null);
-  const [variantImages, setVariantImages] = useState([]);
-  const [boundingArea, setBoundingArea] = useState(null);
-  const [errorMessage, setErrorMessage] = useState("");
-  const [displayScale, setDisplayScale] = useState(1);
+    const fabricCanvasRef = useRef(null);
+    const boundingBoxRef = useRef(null);
+    const [displayScale, setDisplayScale] = useState(1);
+    const [errorMessage, setErrorMessage] = useState("");
+    const [boundingArea, setBoundingArea] = useState(null);
+    const [variantImages, setVariantImages] = useState([]);
+    const [selectedVariant, setSelectedVariant] = useState(null);
 
-  // Utility function to format placement labels
-  const formatPlacementLabel = (placement) => {
-    const words = placement.split("_").filter((word) => word !== "embroidery");
-    const positionIndicators = [
-      "left",
-      "right",
-      "top",
-      "bottom",
-      "front",
-      "back",
-      "side",
-      "inside",
-      "outside",
-    ];
-    const positions = words.filter((word) => positionIndicators.includes(word));
-    const remainingWords = words.filter(
-      (word) => !positionIndicators.includes(word)
-    );
+    // Utility function to format placement labels
+    const formatPlacementLabel = (placement) => {
+      const words = placement
+        .split("_")
+        .filter((word) => word !== "embroidery");
+      const positionIndicators = [
+        "left",
+        "right",
+        "top",
+        "bottom",
+        "front",
+        "back",
+        "side",
+        "inside",
+        "outside",
+      ];
+      const positions = words.filter((word) =>
+        positionIndicators.includes(word)
+      );
+      const remainingWords = words.filter(
+        (word) => !positionIndicators.includes(word)
+      );
 
-    return [...positions, ...remainingWords]
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
-  };
-
-  useEffect(() => {
-    if (!ref?.current) return;
-    const canvasEl = ref.current;
-
-    const handleTouchStart = (e) => {
-      e.preventDefault();
+      return [...positions, ...remainingWords]
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
     };
 
-    canvasEl.addEventListener("touchstart", handleTouchStart, {
-      passive: false,
-    });
+    // handle passive events
+    useEffect(() => {
+      if (!ref?.current) return;
+      const canvasEl = ref.current;
 
-    return () => {
-      canvasEl.removeEventListener("touchstart", handleTouchStart);
+      const handleTouchStart = (e) => {
+        e.preventDefault();
+      };
+
+      canvasEl.addEventListener("touchstart", handleTouchStart, {
+        passive: false,
+      });
+
+      return () => {
+        canvasEl.removeEventListener("touchstart", handleTouchStart);
+      };
+    }, [ref]);
+
+    // Load the mockup variant and templates, then update state
+    useEffect(() => {
+      if (
+        !productMockup ||
+        !productMockup.variant_mapping ||
+        !productMockup.templates
+      )
+        return;
+
+      const selectedVariantData = productMockup.variant_mapping.find(
+        (variant) =>
+          template
+            ? variant.variant_id === template.id
+            : variant.variant_id === productMockup.variant_mapping[0].variant_id
+      );
+
+      if (!selectedVariantData) {
+        setErrorMessage("Selected variant not found.");
+        return;
+      }
+
+      const filteredTemplates = selectedVariantData?.templates || [];
+      const variantTemplateImages = filteredTemplates
+        .map((t) => {
+          const templateData = productMockup.templates.find(
+            (td) => t.template_id === td.template_id
+          );
+          if (!templateData) return null;
+
+          return {
+            id: templateData.template_id,
+            variantId: selectedVariantData.variant_id,
+            label: formatPlacementLabel(t.placement),
+            imageUrl: templateData.image_url,
+            backgroundUrl: templateData.background_url,
+            backgroundColor: templateData.background_color,
+            printfileId: templateData.printfile_id,
+            templateWidth: templateData.template_width,
+            templateHeight: templateData.template_height,
+            printAreaWidth: templateData.print_area_width,
+            printAreaHeight: templateData.print_area_height,
+            printAreaTop: templateData.print_area_top,
+            printAreaLeft: templateData.print_area_left,
+            isTemplateOnFront: templateData.is_template_on_front,
+            orientation: templateData.orientation,
+          };
+        })
+        .filter(Boolean);
+
+      setVariantImages(variantTemplateImages);
+      const variantId = selectedVariantData.templates[0].template_id;
+      setSelectedVariant(variantId);
+    }, [productMockup, template]);
+
+    const addDeleteControl = (fabricCanvas) => {
+      // Delete icon for custom control
+      const deleteIcon =
+        "data:image/svg+xml,%3C%3Fxml version='1.0' encoding='utf-8'%3F%3E%3C!DOCTYPE svg PUBLIC '-//W3C//DTD SVG 1.1//EN' 'http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd'%3E%3Csvg version='1.1' id='Ebene_1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink' x='0px' y='0px' width='595.275px' height='595.275px' viewBox='200 215 230 470' xml:space='preserve'%3E%3Ccircle style='fill:%23F44336;' cx='299.76' cy='439.067' r='218.516'/%3E%3Cg%3E%3Crect x='267.162' y='307.978' transform='matrix(0.7071 -0.7071 0.7071 0.7071 -222.6202 340.6915)' style='fill:white;' width='65.545' height='262.18'/%3E%3Crect x='266.988' y='308.153' transform='matrix(0.7071 0.7071 -0.7071 0.7071 398.3889 -83.3116)' style='fill:white;' width='65.544' height='262.179'/%3E%3C/g%3E%3C/svg%3E";
+
+      const deleteImg = document.createElement("img");
+      deleteImg.src = deleteIcon;
+
+      function deleteObject(_eventData, transform) {
+        const canvas = transform.target.canvas;
+        canvas.remove(transform.target);
+        canvas.requestRenderAll();
+      }
+
+      function renderIcon(ctx, left, top, _styleOverride, fabricObject) {
+        if (!deleteImg.complete || deleteImg.naturalWidth === 0) {
+          console.warn("Delete icon is not loaded yet");
+          return;
+        }
+
+        const size = 24;
+        ctx.save();
+        ctx.translate(left, top);
+        ctx.rotate(fabric.util.degreesToRadians(fabricObject.angle));
+        ctx.drawImage(deleteImg, -size / 2, -size / 2, size, size);
+        ctx.restore();
+      }
+      console.log(JSON.stringify(fabricCanvas));
+
+      const objects = fabricCanvas.getObjects();
+      console.log(objects);
+      const canvasObjects = objects.slice(1);
+      // ✅ Add a custom delete control
+      canvasObjects.forEach((element) => {
+        if (element.type.toLowerCase() === "image") {
+          element.controls.deleteControl = new fabric.Control({
+            x: 0.5,
+            y: -0.5,
+            offsetY: -20,
+            cursorStyle: "pointer",
+            mouseUpHandler: deleteObject,
+            render: renderIcon,
+            cornerSize: 24,
+          });
+        }
+      });
+      fabricCanvas.renderAll();
     };
-  }, [ref]);
 
-  const saveDesign = useCallback(() => {
-    if (fabricCanvasRef?.current) {
+    // Save current canvas state to history
+    const saveToHistory = useCallback(() => {
+      if (!fabricCanvasRef.current) return;
+      const canvasState = fabricCanvasRef.current.toJSON();
+      setHistory((prev) => {
+        const newHistory = [...prev];
+        newHistory.push(canvasState);
+        setHistoryPointer(newHistory.length - 1);
+        return newHistory;
+      });
+    }, [setHistory, setHistoryPointer]);
+
+    const saveDesign = useCallback(() => {
+      if (!fabricCanvasRef?.current) return;
+
       const selectedImage = variantImages.find((v) => v.id === selectedVariant);
       if (!selectedImage) return;
       const canvas = fabricCanvasRef.current;
-      const json = canvas.toJSON();
-
-      // Save the design with a unique key based on the selected image's id
       localStorage.setItem(
         `canvasState-${selectedImage.id}`,
-        JSON.stringify(json)
+        JSON.stringify(canvas)
       );
-    }
-  }, [variantImages, selectedVariant]);
+    }, [variantImages, selectedVariant]);
 
-  // Load image and set as background, scaling it by displayScale.
-  const loadImage = useCallback(
-    (
-      fabricCanvas,
-      imageUrl,
-      templateWidth,
-      templateHeight,
-      backgroundColor = "#ffffff",
-      displayScale
-    ) => {
-      if (!imageUrl) return;
+    const loadData = useCallback(async (selectedImageId) => {
+      const savedState = localStorage.getItem(`canvasState-${selectedImageId}`);
+      if (!savedState) return;
 
-      const imgElement = document.createElement("img");
-      imgElement.src = imageUrl;
-      imgElement.crossOrigin = "anonymous";
-
-      imgElement.onload = () => {
-        // Calculate scaled dimensions for the canvas:
-        const scaledWidth = templateWidth * displayScale;
-        const scaledHeight = templateHeight * displayScale;
-        // Set the canvas size to the scaled template size:
-        fabricCanvas.setWidth(scaledWidth);
-        fabricCanvas.setHeight(scaledHeight);
-
-        // Compute scaling to fit the image into the scaled canvas:
-        const imgScaleX = scaledWidth / imgElement.width;
-        const imgScaleY = scaledHeight / imgElement.height;
-
-        const img = new fabric.FabricImage(imgElement, {
-          selectable: false,
-          evented: false,
-          left: 0,
-          top: 0,
-          scaleX: imgScaleX,
-          scaleY: imgScaleY,
-        });
-
-        fabricCanvas.set("backgroundColor", backgroundColor);
-        fabricCanvas.set(
-          "backgroundImage",
-          img,
-          fabricCanvas.renderAll.bind(fabricCanvas)
-        );
-      };
-    },
-    []
-  );
-
-  // Load the mockup variant and templates, then update state
-  useEffect(() => {
-    if (
-      !productMockup ||
-      !productMockup.variant_mapping ||
-      !productMockup.templates
-    )
-      return;
-
-    const selectedVariantData = productMockup.variant_mapping.find((variant) =>
-      template
-        ? variant.variant_id === template.id
-        : variant.variant_id === productMockup.variant_mapping[0].variant_id
-    );
-
-    if (!selectedVariantData) {
-      setErrorMessage("Selected variant not found.");
-      return;
-    }
-
-    const filteredTemplates = selectedVariantData?.templates || [];
-    const variantTemplateImages = filteredTemplates
-      .map((t) => {
-        const templateData = productMockup.templates.find(
-          (td) => t.template_id === td.template_id
-        );
-        if (!templateData) return null;
-
-        return {
-          id: templateData.template_id,
-          variantId: selectedVariantData.variant_id,
-          label: formatPlacementLabel(t.placement),
-          imageUrl: templateData.image_url,
-          backgroundUrl: templateData.background_url,
-          backgroundColor: templateData.background_color,
-          printfileId: templateData.printfile_id,
-          templateWidth: templateData.template_width,
-          templateHeight: templateData.template_height,
-          printAreaWidth: templateData.print_area_width,
-          printAreaHeight: templateData.print_area_height,
-          printAreaTop: templateData.print_area_top,
-          printAreaLeft: templateData.print_area_left,
-          isTemplateOnFront: templateData.is_template_on_front,
-          orientation: templateData.orientation,
-        };
-      })
-      .filter(Boolean);
-
-    setVariantImages(variantTemplateImages);
-    const variantId = selectedVariantData.templates[0].template_id;
-    setSelectedVariant(variantId);
-  }, [productMockup, template]);
-
-  // Update the bounding area based on template dimensions (no scaling yet)
-  const updateBoundingArea = useCallback((template) => {
-    if (!template) return;
-
-    const { printAreaWidth, printAreaHeight, printAreaTop, printAreaLeft } =
-      template;
-
-    // Note: These coordinates are in the original template pixel space.
-    const newBoundingArea = {
-      left: printAreaLeft,
-      top: printAreaTop,
-      right: printAreaLeft + printAreaWidth,
-      bottom: printAreaTop + printAreaHeight,
-    };
-
-    setBoundingArea((prevArea) =>
-      prevArea &&
-      prevArea.left === newBoundingArea.left &&
-      prevArea.top === newBoundingArea.top &&
-      prevArea.right === newBoundingArea.right &&
-      prevArea.bottom === newBoundingArea.bottom
-        ? prevArea
-        : { ...newBoundingArea }
-    );
-  }, []);
-
-  const loadData = useCallback((selectedImageId) => {
-    // Load the saved design for the selected variant from localStorage or the state
-    const savedState = localStorage.getItem(`canvasState-${selectedImageId}`);
-    const parsedData = JSON.parse(savedState);
-
-    if (parsedData) {
+      const parsedCanvas = JSON.parse(savedState);
       const fabricCanvas = fabricCanvasRef.current;
 
-      fabricCanvas.loadFromJSON(parsedData, () => {
-        // After everything is loaded, loop through objects and disable controls
-        fabricCanvas.getObjects().forEach((obj) => {
-          obj.hasControls = false;
-        });
+      if (!parsedCanvas || !fabricCanvas) return;
+      const canvas = await fabricCanvas.loadFromJSON(parsedCanvas);
+      console.log("canvas is loaded ........", JSON.stringify(canvas));
+      addDeleteControl(canvas);
+    }, []);
 
-        fabricCanvas.renderAll();
-      });
-    }
-  }, []);
-
-  // Initialize canvas, load image, and update bounding area
-  useEffect(() => {
-    if (!ref?.current) return;
-    const selectedImage = variantImages.find((v) => v.id === selectedVariant);
-    if (!selectedImage) return;
-
-    // Calculate a display scale to shrink the template if needed.
-    // For example, if the template is 3000px wide and MAX_DISPLAY_WIDTH is 600:
-    const scale = Math.min(MAX_DISPLAY_WIDTH / selectedImage.templateWidth, 1);
-    setDisplayScale(scale);
-
-    const fabricCanvas = new fabric.Canvas(ref.current, {
-      // Temporary width/height; loadImage will set the final scaled dimensions.
-      width: selectedImage.templateWidth * scale,
-      height: selectedImage.templateHeight * scale,
-      backgroundColor: "white",
-    });
-
-    fabricCanvasRef.current = fabricCanvas;
-    setCanvas(fabricCanvas);
-
-    loadData(selectedImage.id);
-
-    setTimeout(() => {
-      loadImage(
+    // Load image and set as background, scaling it by displayScale.
+    const loadImage = useCallback(
+      (
         fabricCanvas,
-        selectedImage.imageUrl,
-        selectedImage.templateWidth,
-        selectedImage.templateHeight,
-        selectedImage.backgroundColor,
-        scale
+        imageUrl,
+        templateWidth,
+        templateHeight,
+        backgroundColor = "#ffffff",
+        displayScale
+      ) => {
+        if (!imageUrl) return;
+
+        const imgElement = document.createElement("img");
+        imgElement.src = imageUrl;
+        imgElement.crossOrigin = "anonymous";
+
+        imgElement.onload = () => {
+          // Calculate scaled dimensions for the canvas:
+          const scaledWidth = templateWidth * displayScale;
+          const scaledHeight = templateHeight * displayScale;
+          // Set the canvas size to the scaled template size:
+          fabricCanvas.setWidth(scaledWidth);
+          fabricCanvas.setHeight(scaledHeight);
+
+          // Compute scaling to fit the image into the scaled canvas:
+          const imgScaleX = scaledWidth / imgElement.width;
+          const imgScaleY = scaledHeight / imgElement.height;
+
+          const img = new fabric.FabricImage(imgElement, {
+            selectable: false,
+            evented: false,
+            left: 0,
+            top: 0,
+            scaleX: imgScaleX,
+            scaleY: imgScaleY,
+          });
+
+          fabricCanvas.set("backgroundColor", backgroundColor);
+          fabricCanvas.set(
+            "backgroundImage",
+            img,
+            fabricCanvas.renderAll.bind(fabricCanvas)
+          );
+        };
+      },
+      []
+    );
+
+    // Update the bounding area based on template dimensions (no scaling yet)
+    const updateBoundingArea = useCallback((template) => {
+      if (!template) return;
+
+      const { printAreaWidth, printAreaHeight, printAreaTop, printAreaLeft } =
+        template;
+
+      // Note: These coordinates are in the original template pixel space.
+      const newBoundingArea = {
+        left: printAreaLeft,
+        top: printAreaTop,
+        right: printAreaLeft + printAreaWidth,
+        bottom: printAreaTop + printAreaHeight,
+      };
+
+      setBoundingArea((prevArea) =>
+        prevArea &&
+        prevArea.left === newBoundingArea.left &&
+        prevArea.top === newBoundingArea.top &&
+        prevArea.right === newBoundingArea.right &&
+        prevArea.bottom === newBoundingArea.bottom
+          ? prevArea
+          : { ...newBoundingArea }
       );
-    }, 150);
+    }, []);
 
-    updateBoundingArea(selectedImage); // boundingArea remains in original pixel space
+    // Initialize canvas, load image, and update bounding area
+    useEffect(() => {
+      if (!ref?.current) return;
+      const selectedImage = variantImages.find((v) => v.id === selectedVariant);
+      if (!selectedImage) return;
 
-    return () => {
-      saveDesign();
-      fabricCanvas.dispose();
-    };
-  }, [
-    ref,
-    setCanvas,
-    selectedVariant,
-    variantImages,
-    loadImage,
-    updateBoundingArea,
-    loadData,
-    saveDesign,
-  ]);
+      // Calculate a display scale to shrink the template if needed.
+      // For example, if the template is 3000px wide and MAX_DISPLAY_WIDTH is 600:
+      const scale = Math.min(
+        MAX_DISPLAY_WIDTH / selectedImage.templateWidth,
+        1
+      );
+      setDisplayScale(scale);
 
-  // Draw (or update) the bounding box using the displayScale factor.
-  useEffect(() => {
-    const canvas = fabricCanvasRef.current;
-    if (!canvas || !boundingArea) return;
+      const fabricCanvas = new fabric.Canvas(ref.current, {
+        // Temporary width/height; loadImage will set the final scaled dimensions.
+        width: selectedImage.templateWidth * scale,
+        height: selectedImage.templateHeight * scale,
+        backgroundColor: "white",
+      });
 
-    // Remove existing bounding box if any.
-    if (boundingBoxRef.current) {
-      canvas.remove(boundingBoxRef.current);
-    }
+      fabricCanvasRef.current = fabricCanvas;
+      setCanvas(fabricCanvas);
 
-    // Multiply all bounding area coordinates by the displayScale.
-    const scaledLeft = boundingArea.left * displayScale;
-    const scaledTop = boundingArea.top * displayScale;
-    const scaledWidth = (boundingArea.right - boundingArea.left) * displayScale;
-    const scaledHeight =
-      (boundingArea.bottom - boundingArea.top) * displayScale;
+      loadData(selectedImage.id);
 
-    const boundingBox = new fabric.Rect({
-      left: scaledLeft,
-      top: scaledTop,
-      width: scaledWidth,
-      height: scaledHeight,
-      stroke: "red",
-      strokeWidth: 2,
-      fill: "transparent",
-      selectable: false,
-      evented: false,
-    });
+      setTimeout(() => {
+        loadImage(
+          fabricCanvas,
+          selectedImage.imageUrl,
+          selectedImage.templateWidth,
+          selectedImage.templateHeight,
+          selectedImage.backgroundColor,
+          scale
+        );
+      }, 150);
 
-    boundingBoxRef.current = boundingBox;
-    canvas.add(boundingBox);
-    canvas.requestRenderAll();
-  }, [boundingArea, displayScale, selectedVariant]);
+      updateBoundingArea(selectedImage); // boundingArea remains in original pixel space
 
-  // Constrain object movement within the (scaled) bounding area.
-  useEffect(() => {
-    if (!fabricCanvasRef.current || !boundingArea) return;
-    const canvas = fabricCanvasRef.current;
-    const scaledLeft = boundingArea.left * displayScale;
-    const scaledTop = boundingArea.top * displayScale;
-    const scaledRight = boundingArea.right * displayScale;
-    const scaledBottom = boundingArea.bottom * displayScale;
+      fabricCanvas.on("object:scaling", saveToHistory); // Fires continuously while scaling
+      fabricCanvas.on("object:modified", saveToHistory); // Use this to store the final state after resize
 
-    canvas.on("object:moving", (e) => {
-      const obj = e.target;
-      if (obj.left < scaledLeft) obj.left = scaledLeft;
-      if (obj.top < scaledTop) obj.top = scaledTop;
-      if (obj.left + obj.width * obj.scaleX > scaledRight)
-        obj.left = scaledRight - obj.width * obj.scaleX;
-      if (obj.top + obj.height * obj.scaleY > scaledBottom)
-        obj.top = scaledBottom - obj.height * obj.scaleY;
-    });
-  }, [boundingArea, displayScale, selectedVariant]);
+      return () => {
+        fabricCanvas.off("object:scaling", saveToHistory);
+        fabricCanvas.off("object:modified", saveToHistory);
+        fabricCanvas.dispose();
+      };
+    }, [
+      ref,
+      setCanvas,
+      selectedVariant,
+      variantImages,
+      loadImage,
+      updateBoundingArea,
+      loadData,
+      saveToHistory,
+    ]);
 
-  // Constrain object scaling within the (scaled) bounding area.
-  useEffect(() => {
-    if (!fabricCanvasRef.current || !boundingArea) return;
-    const canvas = fabricCanvasRef.current;
-    const scaledLeft = boundingArea.left * displayScale;
-    const scaledTop = boundingArea.top * displayScale;
-    const scaledRight = boundingArea.right * displayScale;
-    const scaledBottom = boundingArea.bottom * displayScale;
+    // Draw (or update) the bounding box using the displayScale factor.
+    useEffect(() => {
+      const canvas = fabricCanvasRef.current;
+      if (!canvas || !boundingArea) return;
 
-    canvas.on("object:scaling", (e) => {
-      const obj = e.target;
-      const scaleX = obj.scaleX;
-      const scaleY = obj.scaleY;
-      const newWidth = obj.width * scaleX;
-      const newHeight = obj.height * scaleY;
+      // Remove existing bounding box if any.
+      if (boundingBoxRef.current) {
+        canvas.remove(boundingBoxRef.current);
+      }
 
-      if (obj.left < scaledLeft) obj.left = scaledLeft;
-      if (obj.top < scaledTop) obj.top = scaledTop;
-      if (obj.left + newWidth > scaledRight)
-        obj.scaleX = Math.min(scaleX, (scaledRight - obj.left) / obj.width);
-      if (obj.top + newHeight > scaledBottom)
-        obj.scaleY = Math.min(scaleY, (scaledBottom - obj.top) / obj.height);
-    });
-  }, [boundingArea, displayScale, selectedVariant]);
+      // Multiply all bounding area coordinates by the displayScale.
+      const scaledLeft = boundingArea.left * displayScale;
+      const scaledTop = boundingArea.top * displayScale;
+      const scaledWidth =
+        (boundingArea.right - boundingArea.left) * displayScale;
+      const scaledHeight =
+        (boundingArea.bottom - boundingArea.top) * displayScale;
 
-  useEffect(() => {
-    const canvas = fabricCanvasRef.current;
-    if (!canvas || !boundingArea) return;
+      const boundingBox = new fabric.Rect({
+        left: scaledLeft,
+        top: scaledTop,
+        width: scaledWidth,
+        height: scaledHeight,
+        stroke: "red",
+        strokeWidth: 2,
+        fill: "transparent",
+        selectable: false,
+        evented: false,
+      });
 
-    const scaledLeft = boundingArea.left * displayScale;
-    const scaledTop = boundingArea.top * displayScale;
-    const scaledRight = boundingArea.right * displayScale;
-    const scaledBottom = boundingArea.bottom * displayScale;
-
-    const clamp = (value, min, max) => Math.max(min, Math.min(value, max));
-
-    const repositionIntoBoundingArea = (obj) => {
-      const width = obj.width * obj.scaleX;
-      const height = obj.height * obj.scaleY;
-
-      // Center the object inside the bounding area
-      const centerX = (scaledLeft + scaledRight) / 2 - width / 2;
-      const centerY = (scaledTop + scaledBottom) / 2 - height / 2;
-
-      // Clamp the object position to ensure it stays within the bounds
-      obj.left = clamp(centerX, scaledLeft, scaledRight - width);
-      obj.top = clamp(centerY, scaledTop, scaledBottom - height);
-    };
-
-    const handleObjectAdded = (e) => {
-      const obj = e.target;
-
-      // Avoid repositioning background images or unselectable items
-      if (!obj.selectable || obj === boundingBoxRef.current) return;
-
-      repositionIntoBoundingArea(obj);
+      boundingBoxRef.current = boundingBox;
+      canvas.add(boundingBox);
       canvas.requestRenderAll();
-    };
+    }, [boundingArea, displayScale, selectedVariant]);
 
-    canvas.on("object:added", handleObjectAdded);
+    // Constrain object movement within the (scaled) bounding area.
+    useEffect(() => {
+      if (!fabricCanvasRef.current || !boundingArea) return;
+      const canvas = fabricCanvasRef.current;
+      const scaledLeft = boundingArea.left * displayScale;
+      const scaledTop = boundingArea.top * displayScale;
+      const scaledRight = boundingArea.right * displayScale;
+      const scaledBottom = boundingArea.bottom * displayScale;
 
-    return () => {
-      canvas.off("object:added", handleObjectAdded);
-    };
-  }, [boundingArea, displayScale, selectedVariant]);
+      canvas.on("object:moving", (e) => {
+        const obj = e.target;
+        if (obj.left < scaledLeft) obj.left = scaledLeft;
+        if (obj.top < scaledTop) obj.top = scaledTop;
+        if (obj.left + obj.width * obj.scaleX > scaledRight)
+          obj.left = scaledRight - obj.width * obj.scaleX;
+        if (obj.top + obj.height * obj.scaleY > scaledBottom)
+          obj.top = scaledBottom - obj.height * obj.scaleY;
+      });
+    }, [boundingArea, displayScale, selectedVariant]);
 
-  return (
-    <div>
-      {isMockupLoading && (
-        <p className="text-gray-500">Loading product mockup...</p>
-      )}
-      {isMockupError && (
-        <p className="text-red-500">Error loading product. Please try again.</p>
-      )}
-      {!isMockupLoading && !isMockupError && (
-        <>
-          <div className="mb-4">
-            {variantImages.map((variant, index) => (
-              <Button
-                key={variant.id}
-                type={
-                  index === 0 && selectedVariant === variant.variantId
-                    ? "primary"
-                    : variant.id === selectedVariant
-                    ? "primary"
-                    : "default"
-                }
-                shape="round"
-                onClick={() => setSelectedVariant(variant.id)} // Set selected variant and save the design
-              >
-                {variant.label}
+    // Constrain object scaling within the (scaled) bounding area.
+    useEffect(() => {
+      if (!fabricCanvasRef.current || !boundingArea) return;
+      const canvas = fabricCanvasRef.current;
+      const scaledLeft = boundingArea.left * displayScale;
+      const scaledTop = boundingArea.top * displayScale;
+      const scaledRight = boundingArea.right * displayScale;
+      const scaledBottom = boundingArea.bottom * displayScale;
+
+      canvas.on("object:scaling", (e) => {
+        const obj = e.target;
+        const scaleX = obj.scaleX;
+        const scaleY = obj.scaleY;
+        const newWidth = obj.width * scaleX;
+        const newHeight = obj.height * scaleY;
+
+        if (obj.left < scaledLeft) obj.left = scaledLeft;
+        if (obj.top < scaledTop) obj.top = scaledTop;
+        if (obj.left + newWidth > scaledRight)
+          obj.scaleX = Math.min(scaleX, (scaledRight - obj.left) / obj.width);
+        if (obj.top + newHeight > scaledBottom)
+          obj.scaleY = Math.min(scaleY, (scaledBottom - obj.top) / obj.height);
+      });
+    }, [boundingArea, displayScale, selectedVariant]);
+
+    // Center object in bounding area
+    useEffect(() => {
+      const canvas = fabricCanvasRef.current;
+      if (!canvas || !boundingArea) return;
+
+      const scaledLeft = boundingArea.left * displayScale;
+      const scaledTop = boundingArea.top * displayScale;
+      const scaledRight = boundingArea.right * displayScale;
+      const scaledBottom = boundingArea.bottom * displayScale;
+
+      const clamp = (value, min, max) => Math.max(min, Math.min(value, max));
+
+      const repositionIntoBoundingArea = (obj) => {
+        const width = obj.width * obj.scaleX;
+        const height = obj.height * obj.scaleY;
+
+        // Center the object inside the bounding area
+        const centerX = (scaledLeft + scaledRight) / 2 - width / 2;
+        const centerY = (scaledTop + scaledBottom) / 2 - height / 2;
+
+        // Clamp the object position to ensure it stays within the bounds
+        obj.left = clamp(centerX, scaledLeft, scaledRight - width);
+        obj.top = clamp(centerY, scaledTop, scaledBottom - height);
+      };
+
+      const handleObjectAdded = (e) => {
+        const obj = e.target;
+
+        // Avoid repositioning background images or unselectable items
+        if (!obj.selectable || obj === boundingBoxRef.current) return;
+
+        repositionIntoBoundingArea(obj);
+        canvas.requestRenderAll();
+      };
+
+      canvas.on("object:added", handleObjectAdded);
+
+      return () => {
+        canvas.off("object:added", handleObjectAdded);
+      };
+    }, [boundingArea, displayScale, selectedVariant]);
+
+    return (
+      <div>
+        {isMockupLoading && (
+          <p className="text-gray-500">Loading product mockup...</p>
+        )}
+        {isMockupError && (
+          <p className="text-red-500">
+            Error loading product. Please try again.
+          </p>
+        )}
+        {!isMockupLoading && !isMockupError && (
+          <>
+            <div className="text-end">
+              <Button type="primary" onClick={saveDesign}>
+                Save
               </Button>
-            ))}
-          </div>
-          {errorMessage && (
-            <div className="error-message text-red-500">{errorMessage}</div>
-          )}
-          <canvas ref={ref} className="border w-100 h-auto" />
-        </>
-      )}
-    </div>
-  );
-});
+            </div>
+            <div className="mb-4">
+              {variantImages.map((variant, index) => (
+                <Button
+                  key={variant.id}
+                  type={
+                    index === 0 && selectedVariant === variant.variantId
+                      ? "primary"
+                      : variant.id === selectedVariant
+                      ? "primary"
+                      : "default"
+                  }
+                  shape="round"
+                  onClick={() => setSelectedVariant(variant.id)} // Set selected variant and save the design
+                >
+                  {variant.label}
+                </Button>
+              ))}
+            </div>
+            {errorMessage && (
+              <div className="error-message text-red-500">{errorMessage}</div>
+            )}
+            <canvas ref={ref} className="border w-100 h-auto" />
+          </>
+        )}
+      </div>
+    );
+  }
+);
 
 export default DesignEditor;

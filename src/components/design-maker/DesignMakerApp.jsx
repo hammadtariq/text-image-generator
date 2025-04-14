@@ -20,11 +20,33 @@ function DesignMakerApp() {
   const [isFileLibraryVisible, setIsFileLibraryVisible] = useState(false);
   const [selectedColor, setSelectedColor] = useState("black");
   const [template, setTemplate] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [historyPointer, setHistoryPointer] = useState(-1);
 
   const handleOpenModal = () => setIsModalVisible(true);
   const handleCloseModal = () => setIsModalVisible(false);
   const handleOpenFileLibrary = () => setIsFileLibraryVisible(true);
   const handleCloseFileLibrary = () => setIsFileLibraryVisible(false);
+
+  const undo = () => {
+    if (historyPointer > 0) {
+      const prevState = history[historyPointer - 1];
+      fabricCanvas?.loadFromJSON(prevState, () => {
+        fabricCanvas.renderAll();
+        setHistoryPointer((prev) => prev - 1);
+      });
+    }
+  };
+
+  const redo = () => {
+    if (historyPointer < history.length - 1) {
+      const nextState = history[historyPointer + 1];
+      fabricCanvas?.loadFromJSON(nextState, () => {
+        fabricCanvas.renderAll();
+        setHistoryPointer((prev) => prev + 1);
+      });
+    }
+  };
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -32,9 +54,10 @@ function DesignMakerApp() {
   if (isError) {
     return <div>Error loading product.</div>;
   }
+
   return (
     <Layout className="w-full h-screen flex flex-col">
-      <Header initialValue={product} />
+      <Header initialValue={product} undo={undo} redo={redo} />
 
       <div className="flex flex-row flex-1 relative">
         <Sidebar
@@ -67,6 +90,8 @@ function DesignMakerApp() {
                 template={template}
                 productId={productId}
                 setCanvas={setFabricCanvas}
+                setHistory={setHistory}
+                setHistoryPointer={setHistoryPointer}
               />
             }
           </div>
