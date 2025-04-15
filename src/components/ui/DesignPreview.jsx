@@ -11,7 +11,7 @@ import VariantSelector from "./VariantSelector";
 
 const MAX_DISPLAY_WIDTH = 600;
 
-const Clone = forwardRef(
+const DesignPreview = forwardRef(
   ({ setCanvas, productId, template }, fabricCanvasRef) => {
     const {
       product: productMockup,
@@ -177,4 +177,4 @@ const Clone = forwardRef(
   }
 );
 
-export default Clone;
+export default DesignPreview;

@@ -9,7 +9,7 @@ import FileLibraryModal from "../ui/FileLibraryModal";
 import { Layout } from "antd";
 import { useParams } from "react-router-dom";
 import { useProductById } from "../../hooks/useProducts";
-import Clone from "../ui/clone";
+import DesignPreview from "../ui/DesignPreview";
 
 function DesignMakerApp() {
   const { productId } = useParams();
@@ -94,7 +94,7 @@ function DesignMakerApp() {
               //   setHistory={setHistory}
               //   setHistoryPointer={setHistoryPointer}
               // />
-              <Clone
+              <DesignPreview
                 ref={canvasRef}
                 template={template}
                 productId={productId}
