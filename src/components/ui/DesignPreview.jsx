@@ -8,9 +8,11 @@ import {
   initializeFabricCanvas,
   restrictScaling,
 } from "../../utils/ui.utils";
+import { HistoryManager } from "../../utils/HistoryManager"; // Make sure path is correct
 import MockupCanvas from "./MockupCanvas";
 import VariantSelector from "./VariantSelector";
 import SaveHandler from "./SaveHandler";
+import UndoRedoHandler from "./UndoRedoHandler";
 
 const MAX_DISPLAY_WIDTH = 600;
 
@@ -28,8 +30,8 @@ const DesignPreview = forwardRef(
     const [selectedVariantId, setSelectedVariantId] = useState(null);
     const [currentImage, setCurrentImage] = useState(null);
     const [fabricInstance, setFabricInstance] = useState(null);
-
     const boundingBoxRef = useRef(null);
+    const historyRef = useRef(null);
 
     // Prevent iOS gesture zoom
     useEffect(() => {
@@ -103,9 +105,17 @@ const DesignPreview = forwardRef(
 
       const parsedCanvas = JSON.parse(savedState);
       const canvas = await fabricCanvas.loadFromJSON(parsedCanvas);
-      console.log("canvas is loaded ........", JSON.stringify(canvas));
-      addStyleToObject(canvas)
+      canvas.requestRenderAll();
+
+      // Restore delete control and styling
+      addStyleToObject(canvas);
       addDeleteControl(canvas);
+
+      // Restore history if needed
+      if (historyRef.current) {
+        historyRef.current.restore([parsedCanvas]);
+        setTimeout(() => historyRef.current?.push(), 300); // push after load
+      }
     }, []);
 
     // Initialize Fabric canvas
@@ -135,10 +145,20 @@ const DesignPreview = forwardRef(
         selectedImage,
         scale
       );
+
+      // Setup history manager
+      const history = new HistoryManager(canvas);
+      historyRef.current = history;
+
+      // Optional: set default effects when restoring objects
+      history.addDefaultEffects((obj) => {
+        addStyleToObject(obj.canvas);
+        addDeleteControl(obj.canvas);
+      });
+
       setFabricInstance(canvas);
       setCanvas(canvas);
 
-      // Call loadData with newly created canvas
       loadData(canvas, selectedImage.id);
 
       return () => canvas.dispose();
@@ -150,7 +170,7 @@ const DesignPreview = forwardRef(
       loadData,
     ]);
 
-    // Handle fabric object movement/scaling
+    // Handle object movement/scaling
     useEffect(() => {
       if (!fabricInstance) return;
 
@@ -172,7 +192,6 @@ const DesignPreview = forwardRef(
       };
     }, [fabricInstance]);
 
-    // UI Render
     return (
       <div>
         {isLoading && (
@@ -186,7 +205,13 @@ const DesignPreview = forwardRef(
 
         {!isLoading && !isError && (
           <>
-            <SaveHandler onSave={saveDesign} />
+            <div className="flex items-center justify-between">
+              <UndoRedoHandler
+                onUndo={() => historyRef.current?.prev()}
+                onRedo={() => historyRef.current?.next()}
+              />
+              <SaveHandler onSave={saveDesign} />
+            </div>
             <VariantSelector
               variantImages={variantImages}
               selectedVariantId={selectedVariantId}

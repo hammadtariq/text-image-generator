@@ -1,9 +1,8 @@
 import { useState, useRef } from "react";
-import Header from "../layout/Header";
+import HeaderComponent from "../layout/HeaderComponent";
 import Sidebar from "../layout/Sidebar";
 import MainContent from "../ui/MainContent";
 import Footer from "../layout/Footer";
-import DesignEditor from "../ui/DesignEditor";
 import UploadInstructionsModal from "../ui/UploadInstructionsModal";
 import FileLibraryModal from "../ui/FileLibraryModal";
 import { Layout } from "antd";
@@ -21,33 +20,11 @@ function DesignMakerApp() {
   const [isFileLibraryVisible, setIsFileLibraryVisible] = useState(false);
   const [selectedColor, setSelectedColor] = useState("black");
   const [template, setTemplate] = useState(null);
-  const [history, setHistory] = useState([]);
-  const [historyPointer, setHistoryPointer] = useState(-1);
 
   const handleOpenModal = () => setIsModalVisible(true);
   const handleCloseModal = () => setIsModalVisible(false);
   const handleOpenFileLibrary = () => setIsFileLibraryVisible(true);
   const handleCloseFileLibrary = () => setIsFileLibraryVisible(false);
-
-  const undo = () => {
-    if (historyPointer > 0) {
-      const prevState = history[historyPointer - 1];
-      fabricCanvas?.loadFromJSON(prevState, () => {
-        fabricCanvas.renderAll();
-        setHistoryPointer((prev) => prev - 1);
-      });
-    }
-  };
-
-  const redo = () => {
-    if (historyPointer < history.length - 1) {
-      const nextState = history[historyPointer + 1];
-      fabricCanvas?.loadFromJSON(nextState, () => {
-        fabricCanvas.renderAll();
-        setHistoryPointer((prev) => prev + 1);
-      });
-    }
-  };
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -58,7 +35,7 @@ function DesignMakerApp() {
 
   return (
     <Layout className="w-full h-screen flex flex-col">
-      <Header initialValue={product} undo={undo} redo={redo} />
+      <HeaderComponent />
 
       <div className="flex flex-row flex-1 relative">
         <Sidebar
@@ -86,14 +63,6 @@ function DesignMakerApp() {
         <div className="flex-1 flex justify-center items-center bg-gray-200">
           <div className="border bg-white p-4 w-[90%] flex items-center justify-center shadow-md">
             {
-              // <DesignEditor
-              //   ref={canvasRef}
-              //   template={template}
-              //   productId={productId}
-              //   setCanvas={setFabricCanvas}
-              //   setHistory={setHistory}
-              //   setHistoryPointer={setHistoryPointer}
-              // />
               <DesignPreview
                 ref={canvasRef}
                 template={template}

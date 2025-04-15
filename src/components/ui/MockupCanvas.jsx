@@ -34,6 +34,7 @@ export default function MockupCanvas({
           top: `${currentImage?.printAreaTop * displayScale}px`,
           width: `${currentImage?.printAreaWidth * displayScale + 5}px`,
           height: `${currentImage?.printAreaHeight * displayScale + 5}px`,
+
           border: "2px solid red",
         }}
       >
