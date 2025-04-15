@@ -9,6 +9,7 @@ import FileLibraryModal from "../ui/FileLibraryModal";
 import { Layout } from "antd";
 import { useParams } from "react-router-dom";
 import { useProductById } from "../../hooks/useProducts";
+import Clone from "../ui/clone";
 
 function DesignMakerApp() {
   const { productId } = useParams();
@@ -85,13 +86,19 @@ function DesignMakerApp() {
         <div className="flex-1 flex justify-center items-center bg-gray-200">
           <div className="border bg-white p-4 w-[90%] flex items-center justify-center shadow-md">
             {
-              <DesignEditor
+              // <DesignEditor
+              //   ref={canvasRef}
+              //   template={template}
+              //   productId={productId}
+              //   setCanvas={setFabricCanvas}
+              //   setHistory={setHistory}
+              //   setHistoryPointer={setHistoryPointer}
+              // />
+              <Clone
                 ref={canvasRef}
                 template={template}
                 productId={productId}
                 setCanvas={setFabricCanvas}
-                setHistory={setHistory}
-                setHistoryPointer={setHistoryPointer}
               />
             }
           </div>

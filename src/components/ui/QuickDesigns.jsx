@@ -92,6 +92,11 @@ function QuickDesigns({ canvas }) {
       img.set({
         left: (canvas.width - maxWidth) / 2,
         top: (canvas.height - maxHeight) / 2,
+        transparentCorners: false,
+        cornerStrokeColor: "red",
+        borderColor: "red",
+        cornerStyle: "circle",
+        
       });
 
       // ✅ Ensure controls (resizing, rotation, movement) work
