@@ -96,7 +96,6 @@ function QuickDesigns({ canvas }) {
         cornerStrokeColor: "red",
         borderColor: "red",
         cornerStyle: "circle",
-        
       });
 
       // ✅ Ensure controls (resizing, rotation, movement) work

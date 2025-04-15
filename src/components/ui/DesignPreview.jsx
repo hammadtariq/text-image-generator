@@ -1,6 +1,8 @@
-import { useEffect, forwardRef, useState, useRef } from "react";
+import { useEffect, forwardRef, useState, useRef, useCallback } from "react";
 import { useProductMockup } from "../../hooks/useMockup";
 import {
+  addDeleteControl,
+  addStyleToObject,
   clampObjectWithinBounds,
   formatPlacementLabel,
   initializeFabricCanvas,
@@ -8,6 +10,7 @@ import {
 } from "../../utils/ui.utils";
 import MockupCanvas from "./MockupCanvas";
 import VariantSelector from "./VariantSelector";
+import SaveHandler from "./SaveHandler";
 
 const MAX_DISPLAY_WIDTH = 600;
 
@@ -85,6 +88,26 @@ const DesignPreview = forwardRef(
       setSelectedVariantId(templates[0]?.id);
     }, [productMockup, template]);
 
+    const saveDesign = () => {
+      if (!fabricInstance && !currentImage) return;
+
+      localStorage.setItem(
+        `canvasState-${currentImage.id}`,
+        JSON.stringify(fabricInstance)
+      );
+    };
+
+    const loadData = useCallback(async (fabricCanvas, selectedImageId) => {
+      const savedState = localStorage.getItem(`canvasState-${selectedImageId}`);
+      if (!savedState || !fabricCanvas) return;
+
+      const parsedCanvas = JSON.parse(savedState);
+      const canvas = await fabricCanvas.loadFromJSON(parsedCanvas);
+      console.log("canvas is loaded ........", JSON.stringify(canvas));
+      addStyleToObject(canvas)
+      addDeleteControl(canvas);
+    }, []);
+
     // Initialize Fabric canvas
     useEffect(() => {
       if (
@@ -115,8 +138,17 @@ const DesignPreview = forwardRef(
       setFabricInstance(canvas);
       setCanvas(canvas);
 
+      // Call loadData with newly created canvas
+      loadData(canvas, selectedImage.id);
+
       return () => canvas.dispose();
-    }, [fabricCanvasRef, selectedVariantId, variantImages, setCanvas]);
+    }, [
+      fabricCanvasRef,
+      selectedVariantId,
+      variantImages,
+      setCanvas,
+      loadData,
+    ]);
 
     // Handle fabric object movement/scaling
     useEffect(() => {
@@ -154,6 +186,7 @@ const DesignPreview = forwardRef(
 
         {!isLoading && !isError && (
           <>
+            <SaveHandler onSave={saveDesign} />
             <VariantSelector
               variantImages={variantImages}
               selectedVariantId={selectedVariantId}
